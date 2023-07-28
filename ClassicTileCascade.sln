@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33801.468
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ClassicTileCascade", "ClassicTileCascade\ClassicTileCascade.vcxproj", "{E40749E1-6B58-4C52-B372-00D52B2F9894}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "ClassicTileCascadeSetup", "ClassicTileCascadeSetup\ClassicTileCascadeSetup.vdproj", "{AF75D5DE-28BB-44AA-8E8D-320DDE7F049A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E40749E1-6B58-4C52-B372-00D52B2F9894}.Debug|x64.ActiveCfg = Debug|x64
+		{E40749E1-6B58-4C52-B372-00D52B2F9894}.Debug|x64.Build.0 = Debug|x64
+		{E40749E1-6B58-4C52-B372-00D52B2F9894}.Debug|x86.ActiveCfg = Debug|Win32
+		{E40749E1-6B58-4C52-B372-00D52B2F9894}.Debug|x86.Build.0 = Debug|Win32
+		{E40749E1-6B58-4C52-B372-00D52B2F9894}.Release|x64.ActiveCfg = Release|x64
+		{E40749E1-6B58-4C52-B372-00D52B2F9894}.Release|x64.Build.0 = Release|x64
+		{E40749E1-6B58-4C52-B372-00D52B2F9894}.Release|x86.ActiveCfg = Release|Win32
+		{E40749E1-6B58-4C52-B372-00D52B2F9894}.Release|x86.Build.0 = Release|Win32
+		{AF75D5DE-28BB-44AA-8E8D-320DDE7F049A}.Debug|x64.ActiveCfg = Debug
+		{AF75D5DE-28BB-44AA-8E8D-320DDE7F049A}.Debug|x86.ActiveCfg = Debug
+		{AF75D5DE-28BB-44AA-8E8D-320DDE7F049A}.Release|x64.ActiveCfg = Release
+		{AF75D5DE-28BB-44AA-8E8D-320DDE7F049A}.Release|x86.ActiveCfg = Release
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {655A7DBE-040F-480C-A3CA-33E455D3AC3D}
+	EndGlobalSection
+EndGlobal

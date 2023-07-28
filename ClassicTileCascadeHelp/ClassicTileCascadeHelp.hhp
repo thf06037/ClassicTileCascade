@@ -1,0 +1,21 @@
+[OPTIONS]
+Compatibility=1.1 or later
+Compiled file=ClassicTileCascadeHelp.chm
+Contents file=Table of Contents.hhc
+Default topic=Welcome.htm
+Display compile progress=No
+Full-text search=Yes
+Language=0x409 English (United States)
+Title=Classic Tile & Cascade
+
+
+[FILES]
+Basic Operation.htm
+Settings Menu.htm
+Starting Classic Tile.htm
+Troubleshooting.htm
+Welcome.htm
+License.htm
+
+[INFOTYPES]
+
