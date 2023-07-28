@@ -107,8 +107,6 @@ bool RegDeReg(SPFILE& pLogFP)
     static const std::wregex REGUSER(L"^/REGISTERUSER$", std::regex_constants::icase);
     static const std::wregex UNREGUSER(L"^/UNREGISTERUSER$", std::regex_constants::icase);
 
-    log_add_fp(pLogFP.get(), LOG_TRACE);
-
     bool fRetVal = false;
     int nArgs = 0;
     LPWSTR* lpszArglist = ::CommandLineToArgvW(GetCommandLineW(), &nArgs);
@@ -118,45 +116,68 @@ bool RegDeReg(SPFILE& pLogFP)
             szFirstArg = lpszArglist[1];
         }
         LocalFree(lpszArglist);
+
+        DWORD dwProcId = ::GetCurrentProcessId();
         if (nArgs > 1) {
+
             std::wstring szExePath;
             CTWinUtils::GetCurrModuleFileName(szExePath);
+            
+            log_add_fp(pLogFP.get(), LOG_TRACE);
+            
+            log_info("ProcID <%u>: <%S> command line argument passed.", dwProcId, szFirstArg.c_str());
 
             if (std::regex_match(szFirstArg, REG) || std::regex_match(szFirstArg, UNREG)) {
                 //our process may be running as an elevated user. we need the registry entries to be added in
                 //a process that is running as the logged in user
                 try {
                     std::wstring szRegUser = szFirstArg + L"USER";
+                    log_info("ProcID <%u>: Processs running at %s level.", dwProcId, IsUserAnAdmin() ? "elevated" : "regular");
+                    log_info(   "ProcID <%u>: <%S> parameter passed - attempting to launch app as logged in user with command line argument <%S>", 
+                                dwProcId, szFirstArg.c_str(), szRegUser.c_str());
 
-                    CCoInitialize coInit;
-                    eval_fatal_hr(CTWinUtils::ShellExecInExplorerProcess(szExePath, szRegUser));
-                    log_info("Launched app as standard user");
-                    fRetVal = true;
+                    DWORD dwNewProcID = 0;
+                    eval_fatal_nz(CTWinUtils::ShellExecInExplorerProcess(szExePath, szRegUser, &dwNewProcID));
+
+                    log_info("ProcID <%u>: Launched app as standard user with ProcID <%u>", dwProcId, dwNewProcID);
+                    
                 }catch (const LoggingException& le) {
                     le.Log();
                 }catch (...) {
                     log_error("Unhandled exception");
                 }
+                fRetVal = true;
             }else if (std::regex_match(szFirstArg, REGUSER) || std::regex_match(szFirstArg, UNREGUSER)) {
+                log_info("ProcID <%u>: <%S> parameter passed - starting register/unregister process", dwProcId, szFirstArg.c_str());
+
                 Unregister();
+
                 if (std::regex_match(szFirstArg, REGUSER)) {
+                    log_info("ProcID <%u>: Starting register process.", dwProcId);
                     bool fSuccess = true;
                     try {
                         eval_error_es(ClassicTileRegUtil::SetRegLeftClickAction(ID_FILE_CASCADEWINDOWS));
+                        log_info("ProcID <%u>: Added Left Click Action registry value.", dwProcId);
 
                         eval_error_es(ClassicTileRegUtil::SetRegLogging(0));
+                        log_info("ProcID <%u>: Added Logging registry value.", dwProcId);
 
                         eval_error_es(ClassicTileRegUtil::SetRegDefWndTile(0));
+                        log_info("ProcID <%u>: Added Default/Custom Window Tile/Cascade registry value.", dwProcId);
 
                         eval_error_es(ClassicTileRegUtil::SetRegRun());
+                        log_info("ProcID <%u>: Added Auto Run registry value.", dwProcId);
 
+                        log_info("ProcID <%u>: Attempting to start interactive application.", dwProcId);
                         STARTUPINFO si = { 0 };
                         si.cb = sizeof(si);
 
                         PROCESS_INFORMATION pi = { 0 };
-                        eval_error_nz(::CreateProcessW(nullptr, szExePath.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi));
+                        std::wstring szCommandLine = L"\"" + szExePath + L"\"";
+                        eval_error_nz(::CreateProcessW(nullptr, szCommandLine.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi));
                         ::CloseHandle(pi.hProcess);
                         ::CloseHandle(pi.hThread);
+                        log_info("ProcID <%u>: Interactive application started successfully with ProcID <%u>.", dwProcId, pi.dwProcessId);
 
                         fSuccess = true;
                     }catch(const LoggingException& le){
@@ -167,8 +188,11 @@ bool RegDeReg(SPFILE& pLogFP)
                         fSuccess = false;
                     }
                     
-                    log_info("ClassicTileCascade %s", fSuccess ? "registered" : "register failed");
+                    log_info("ProcID <%u>: ClassicTileCascade %s", dwProcId, fSuccess ? "registered" : "register failed");
                 }
+                fRetVal = true;
+            }else {
+                log_fatal("ProcID <%u>: <%S> unrecognized command line argument.", dwProcId, szFirstArg.c_str());
                 fRetVal = true;
             }
         }
@@ -179,11 +203,18 @@ bool RegDeReg(SPFILE& pLogFP)
 
 void Unregister()
 {
+    DWORD dwProcId = ::GetCurrentProcessId();
+    
+    log_info("ProcID <%u>: Starting unregister function", dwProcId);
+
     bool fSuccess = true;
+
     LONG lReturnValue = ClassicTileRegUtil::CheckRegAppPath();
     if (lReturnValue == ERROR_SUCCESS) {
+        log_info("ProcID <%u>: Application registry key exists, attempting delete", dwProcId);
         try {
             eval_error_es(ClassicTileRegUtil::DeleteRegAppPath());
+            log_info("ProcID <%u>: Application registry key delete successful", dwProcId);
         }catch(const LoggingException& le) {
             le.Log();
             fSuccess = false;
@@ -191,12 +222,16 @@ void Unregister()
             log_error("Unhandled exception");
             fSuccess = false;
         }
+    }else{
+        log_info("ProcID <%u>: Application registry key does not exist.", dwProcId);
     }
 
     lReturnValue = ClassicTileRegUtil::CheckRegRun();
     if (lReturnValue == ERROR_SUCCESS) {
+        log_info("ProcID <%u>: Auto run registry value exists, attempting delete", dwProcId);
         try {
             eval_error_es(ClassicTileRegUtil::DeleteRegRun());
+            log_info("ProcID <%u>: Auto run registry value key delete successful", dwProcId);
         }catch (const LoggingException& le) {
             le.Log();
             fSuccess = false;
@@ -204,9 +239,11 @@ void Unregister()
             log_error("Unhandled exception");
             fSuccess = false;
         }
+    }else {
+        log_info("ProcID <%u>: Auto run registry value does not exist.", dwProcId);
     }
 
-    log_info("ClassicTileCascade %s", fSuccess ? "unregistered" : "unregister failed");
+    log_info("ProcID <%u>: ClassicTileCascade %s", dwProcId, fSuccess ? "unregistered" : "unregister failed");
 }
 
 FILE* InitLogging(const std::string& szLogPath)

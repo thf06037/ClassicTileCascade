@@ -61,11 +61,23 @@ struct FILE_deleter {
     }
 };
 
+struct HANDLE_deleter {
+    void operator()(HANDLE h)
+    {
+        if (h) {
+            ::CloseHandle(h);
+        }
+    }
+
+    using pointer = HANDLE;
+};
+
 using SPHKEY = std::unique_ptr<HKEY, HKEY_deleter>;
 using SPHMENU = std::unique_ptr<HMENU, HMENU_deleter>;
 using SPHWND = std::unique_ptr<HWND, HWND_deleter>;
 using SPHICON = std::unique_ptr<HICON, HICON_deleter>;
 using SPFILE = std::unique_ptr<FILE, FILE_deleter>;
+using SPHANDLE_EX = std::unique_ptr<HANDLE, HANDLE_deleter>;
 
 struct CCoInitialize
 {

@@ -14,7 +14,7 @@ namespace CTWinUtils
 	UINT GetSubMenuPosByString(HMENU hMenu, const std::wstring& szString);
 	bool CheckMenuItem(HMENU hMenu, UINT uID, bool bChecked);
 
-	HRESULT ShellExecInExplorerProcess(const std::wstring& szFile, const std::wstring& szArgs = L"");
+	bool ShellExecInExplorerProcess(const std::wstring& szFile, const std::wstring& szArgs = L"", LPDWORD pDWProcID = nullptr);
 	DWORD GetCurrModuleFileName(std::wstring& szCurrModFileName);
 	void Wstring2string(std::string& szString, const std::wstring& szWString);
 	void String2wstring(std::wstring& szWString, const std::string& szString);

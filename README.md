@@ -335,11 +335,6 @@ Classic Tile & Cascade uses the [log.c](https://github.com/rxi/log.c) open sourc
 A simple logging library implemented in C99. Copyright (c) 2020 rxi. Used in accordance with
 the MIT License.
 
-The ShellExecInExplorerProcess function in WinUtils used to launch an application as the logged in user
-when running a process under an elevated account
-are adapted from the Microsoft SDK samples: 
-[WindowsSDK7-Samples/winui/shell/appplatform/ExecInExplorer/ExecInExplorer.cpp](https://github.com/pauldotknopf/WindowsSDK7-Samples/tree/master/winui/shell/appplatform/ExecInExplorer)
- 
  I was guided by several blog entries from Raymond Chen's fantastic [oldnewthing blog](https://devblogs.microsoft.com/oldnewthing/).
  Particularly helpful was the blog entry ["Which windows appear in the Alt+Tab list?,"](https://devblogs.microsoft.com/oldnewthing/20071008-00/?p=24863) 
  which helped me to develop the custom algorithm used for tiling and cascading windows 

@@ -83,58 +83,72 @@ bool CTWinUtils::CheckMenuItem(HMENU hMenu, UINT uID, bool bChecked)
     return (::SetMenuItemInfoW(hMenu, static_cast<UINT>(uID), FALSE, &mii) == TRUE);
 }
 
-HRESULT CTWinUtils::ShellExecInExplorerProcess(const std::wstring& szFile, const std::wstring& szArgs)
+bool CTWinUtils::ShellExecInExplorerProcess(const std::wstring& szFile, const std::wstring& szArgs, LPDWORD pDWProcID)
 {
-    _COM_SMARTPTR_TYPEDEF(IShellWindows, IID_IShellWindows);
-    _COM_SMARTPTR_TYPEDEF(IShellBrowser, IID_IShellBrowser);
-    _COM_SMARTPTR_TYPEDEF(IShellFolderViewDual, IID_IShellFolderViewDual);
-    _COM_SMARTPTR_TYPEDEF(IShellView, IID_IShellView);
-    _COM_SMARTPTR_TYPEDEF(IShellDispatch2, IID_IShellDispatch2);
+    const static DWORD DW_TOKEN_RIGHTS = TOKEN_QUERY | TOKEN_ASSIGN_PRIMARY | TOKEN_DUPLICATE | TOKEN_ADJUST_DEFAULT | TOKEN_ADJUST_SESSIONID;
+    bool fRetVal = false;
 
+    STARTUPINFOW si = { 0 };
+    si.cb = sizeof(STARTUPINFOW);
+    PROCESS_INFORMATION pi = { 0 };
 
-    HRESULT hr = E_UNEXPECTED;
-    try {
-        IShellWindowsPtr spShellWindows;
-        hr = eval_error_hr(spShellWindows.CreateInstance(CLSID_ShellWindows, NULL, CLSCTX_LOCAL_SERVER));
+    try{
+        if (pDWProcID) {
+            *pDWProcID = 0;
+        }
+
+        std::wstring szCommandLine = L"\"" + szFile + L"\"" + ((szArgs.size() > 0) ? (L" " + szArgs) : L"");
+
+        if (IsUserAnAdmin()) {
+            SPHANDLE_EX hProcessToken;
+            eval_error_nz(::OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, std::out_ptr(hProcessToken)));
         
-        HWND hwnd = nullptr;
-        IDispatchPtr spDisp;
-        _variant_t vtEmpty;
-        hr = eval_error_hr(spShellWindows->FindWindowSW(&vtEmpty, &vtEmpty, SWC_DESKTOP, reinterpret_cast<long*>(&hwnd), SWFO_NEEDDISPATCH, &spDisp));
-        if (hr != S_OK) {
-            generate_error("IShellWindows::FindWindowSW did not return S_OK");
+            TOKEN_PRIVILEGES tkp = {0};
+            tkp.PrivilegeCount = 1;
+            eval_error_nz(::LookupPrivilegeValueW(nullptr, SE_INCREASE_QUOTA_NAME, &tkp.Privileges[0].Luid));
+            tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+        
+            eval_error_nz(::AdjustTokenPrivileges(hProcessToken.get(), FALSE, &tkp, 0, nullptr, nullptr));
+            if (::GetLastError()  != ERROR_SUCCESS){
+                generate_error("AdjustTokenPrivileges did not get required privileges");
+            }
+
+            HWND hWnd = eval_error_nz(::GetShellWindow());
+        
+            DWORD dwPID;
+            eval_error_nz(GetWindowThreadProcessId(hWnd, &dwPID));
+
+            SPHANDLE_EX hShellProcess;
+            hShellProcess.reset(eval_error_nz(::OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, dwPID)));
+
+            SPHANDLE_EX hShellProcessToken;
+            eval_error_nz(::OpenProcessToken(hShellProcess.get(), TOKEN_DUPLICATE, std::out_ptr(hShellProcessToken)));
+
+            SPHANDLE_EX hPrimaryToken;
+            eval_error_nz(::DuplicateTokenEx(hShellProcessToken.get(), DW_TOKEN_RIGHTS, nullptr, SecurityImpersonation, TokenPrimary, std::out_ptr(hPrimaryToken)));
+
+            eval_error_nz(::CreateProcessWithTokenW(hPrimaryToken.get(), LOGON_WITH_PROFILE, nullptr, szCommandLine.data(), 0, nullptr, nullptr, &si, &pi));
+
+            fRetVal = true;
+        }else {
+            eval_error_nz(::CreateProcessW(NULL, szCommandLine.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi));
+            fRetVal = true;
         }
-
-        IShellBrowserPtr spSB;
-        hr = eval_error_hr(::IUnknown_QueryService(spDisp, SID_STopLevelBrowser, spSB.GetIID(), reinterpret_cast<void**>(&spSB)));
-
-        IShellViewPtr spSV;
-        hr = eval_error_hr(spSB->QueryActiveShellView(&spSV));
-
-        hr = eval_error_hr(spSV->GetItemObject(SVGIO_BACKGROUND, spDisp.GetIID(), reinterpret_cast<void**>(&spDisp)));
-
-        IShellFolderViewDualPtr spSFVD = spDisp;
-        hr = eval_error_hr(spSFVD ? S_OK : E_NOINTERFACE);
-
-        hr = eval_error_hr(spSFVD->get_Application(&spDisp));
-
-        IShellDispatch2Ptr spSD2 = spDisp;
-        hr = eval_error_hr(spSD2 ? S_OK : E_NOINTERFACE);
-
-        _bstr_t bstrFile = szFile.c_str();
-        _variant_t vtArgs;
-        if (szArgs.size() > 0) {
-            vtArgs = szArgs.c_str();
-        }
-        hr = spSD2->ShellExecuteW(bstrFile, vtArgs, vtEmpty, vtEmpty, vtEmpty);
     }catch (const LoggingException& le) {
         le.Log();
     }catch (...) {
         log_error("Unhandled exception");
-        hr = E_UNEXPECTED;
     }
 
-    return hr;
+    if (fRetVal) {
+        ::CloseHandle(pi.hProcess);
+        ::CloseHandle(pi.hThread);
+        if (pDWProcID) {
+            *pDWProcID = pi.dwProcessId;
+        }
+    }
+
+    return fRetVal;
 }
 
 
