@@ -31,4 +31,6 @@ namespace CTWinUtils
 
 	template<class T>
 	bool PathCombineEx(T& szDest, const T& szDir, const T& szFile);
+
+	bool GetFinalPathNameByFILE(FILE* pFile, std::wstring& szPath);
 }

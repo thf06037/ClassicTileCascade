@@ -6,12 +6,12 @@
  */
 #pragma once
 
-
 class ClassicTileWnd
 {
 public:
-	ClassicTileWnd(bool bLogging, const std::string& szLogPath);
+	ClassicTileWnd(SPFILE_SHARED pLogFP);
 	bool InitInstance(HINSTANCE hInstance);
+	bool RegUnReg(bool& fSuccess);
 	
 	ClassicTileWnd() = delete;
 	ClassicTileWnd(const ClassicTileWnd&) = delete;
@@ -49,6 +49,7 @@ protected:
 
 	//Static helper functions
 	static  File2DefaultStruct FindMenuId2MenuItem(const MenuId2MenuItem& menuID2MenuItem, UINT uSought);
+	static  bool Unregister();
 
 	//callback functions
 	static LRESULT CALLBACK s_WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -89,6 +90,6 @@ protected:
 	bool m_bAutoStart = false;
 	bool m_bDefWndTile = false;
 	HWND m_hwndTaskDlg = nullptr;
-	std::wstring m_szLogPath;
+	SPFILE_SHARED m_pLogFP{ nullptr, FILE_deleter{} };
 };
 

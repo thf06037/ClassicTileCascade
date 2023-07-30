@@ -12,12 +12,12 @@ namespace ClassicTileRegUtil
 	LONG DeleteRegAppPath();
 	LONG GetRegLeftClickAction(DWORD& dwLeftClickAction);
 	LONG SetRegLeftClickAction(DWORD dwLeftClickAction);
-	LONG GetRegLogging(DWORD& dwLogging);
-	LONG SetRegLogging(DWORD dwLogging);
+	LONG GetRegLogging(bool& bLogging);
+	LONG SetRegLogging(bool bLogging);
 	LONG CheckRegRun();
 	LONG SetRegRun();
 	LONG DeleteRegRun();
-	LONG GetRegDefWndTile(DWORD& dwDefWndTile);
-	LONG SetRegDefWndTile(DWORD dwDefWndTile);
-
+	LONG GetRegDefWndTile(bool& bDefWndTile);
+	LONG SetRegDefWndTile(bool bDefWndTile);
+	
 }

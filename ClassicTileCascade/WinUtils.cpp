@@ -25,10 +25,9 @@
  //https://github.com/pauldotknopf/WindowsSDK7-Samples/tree/master/winui/shell/appplatform/ExecInExplorer
 
 #include "pch.h"
-#include "WinUtils.h"
 #include "win_log.h"
-#include "resource.h"
 #include "MemMgmt.h"
+#include "WinUtils.h"
 
 void CTWinUtils::ShellHelper(LPSHELLFUNC lpShellFunc)
 {
@@ -242,3 +241,26 @@ bool CTWinUtils::PathCombineEx(std::string& szDest, const std::string& szDir, co
 
 template
 bool CTWinUtils::PathCombineEx(std::wstring& szDest, const std::wstring& szDir, const std::wstring& szFile);
+
+bool CTWinUtils::GetFinalPathNameByFILE(FILE* pFile, std::wstring& szPath)
+{
+    bool bRetVal = false;
+
+    szPath.clear();
+
+    int nFN = _fileno(pFile);
+    if (nFN >= 0) {
+        HANDLE hFile = reinterpret_cast<HANDLE>(_get_osfhandle(nFN));
+        if (hFile != INVALID_HANDLE_VALUE) {
+            szPath.resize(MAX_PATH);
+            if (::GetFinalPathNameByHandleW(hFile, szPath.data(), szPath.size(), 0)) {
+                RemoveFromNull(szPath);
+                if (SUCCEEDED(::PathCchStripPrefix(szPath.data(), szPath.size()))) {
+                    RemoveFromNull(szPath);
+                    bRetVal = true;
+                }
+            }
+        }
+    }
+    return bRetVal;
+}

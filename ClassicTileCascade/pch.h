@@ -41,4 +41,5 @@
 #include <memory>
 #include <regex>
 #include <algorithm>
+#include <io.h>
 #endif //PCH_H

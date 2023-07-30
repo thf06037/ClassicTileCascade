@@ -20,15 +20,16 @@
  * IN THE SOFTWARE.
  */
 #include "pch.h"
-#include "framework.h"
 #include "MemMgmt.h"
 #include "WinUtils.h"
-
 #include "ClassicTileRegUtil.h"
 
 LONG OpenOrCreateRegKey(const std::wstring& szPath, bool bCreate, SPHKEY& hKey);
 LONG GetDWORDRegValue(const std::wstring& szPath, const std::wstring& szValueName, DWORD& dwValue);
 LONG SetDWORDRegValue(const std::wstring& szPath, const std::wstring& szValueName, DWORD dwValue, bool bCreate);
+
+LONG GetBoolRegValue(const std::wstring& szPath, const std::wstring& szValueName, bool& bValue);
+LONG SetBoolRegValue(const std::wstring& szPath, const std::wstring& szValueName, bool bValue, bool bCreate);
 
 const static std::wstring REG_KEY_PATH = L"Software\\thf\\ClassicTileCascade";
 const static std::wstring REG_KEY_PARENT_PATH = L"Software\\thf";
@@ -62,6 +63,23 @@ LONG SetDWORDRegValue(const std::wstring& szPath, const std::wstring& szValueNam
         lReturnValue = ::RegSetValueExW(hKey.get(), szValueName.c_str(), 0, REG_DWORD, reinterpret_cast<LPBYTE>(&dwValue), sizeof(dwValue));
     }
     return lReturnValue;
+}
+
+LONG GetBoolRegValue(const std::wstring& szPath, const std::wstring& szValueName, bool& bValue)
+{
+    bValue = false;
+    DWORD dwValue = 0;
+    LONG lReturnValue = GetDWORDRegValue(szPath, szValueName, dwValue);
+
+    if (lReturnValue == ERROR_SUCCESS) {
+        bValue = (dwValue != 0);
+    }
+    return lReturnValue;
+}
+
+LONG SetBoolRegValue(const std::wstring& szPath, const std::wstring& szValueName, bool bValue, bool bCreate)
+{
+    return SetDWORDRegValue(szPath, szValueName, bValue ? 1 : 0, bCreate);
 }
 
 
@@ -102,16 +120,15 @@ LONG ClassicTileRegUtil::SetRegLeftClickAction(DWORD dwLeftClickAction)
     return SetDWORDRegValue(REG_KEY_PATH, REG_LEFT_CLICK_VAL, dwLeftClickAction, true);
 }
 
-LONG ClassicTileRegUtil::GetRegLogging(DWORD& dwLogging)
+LONG ClassicTileRegUtil::GetRegLogging(bool& bLogging)
 {
-    return GetDWORDRegValue(REG_KEY_PATH, REG_LOGGING_VAL, dwLogging);
+    return GetBoolRegValue(REG_KEY_PATH, REG_LOGGING_VAL, bLogging);
 }
 
-LONG ClassicTileRegUtil::SetRegLogging(DWORD dwLogging)
+LONG ClassicTileRegUtil::SetRegLogging(bool bLogging)
 {
-    return SetDWORDRegValue(REG_KEY_PATH, REG_LOGGING_VAL, dwLogging, true);
+    return SetBoolRegValue(REG_KEY_PATH, REG_LOGGING_VAL, bLogging, true);
 }
-
 
 LONG ClassicTileRegUtil::CheckRegRun()
 {
@@ -140,12 +157,12 @@ LONG ClassicTileRegUtil::DeleteRegRun()
     return lReturnValue;
 }
 
-LONG ClassicTileRegUtil::GetRegDefWndTile(DWORD& dwDefWndTile)
+LONG ClassicTileRegUtil::GetRegDefWndTile(bool& bDefWndTile)
 {
-    return GetDWORDRegValue(REG_KEY_PATH, REG_DEFWNDTILE_VAL, dwDefWndTile);
+    return GetBoolRegValue(REG_KEY_PATH, REG_DEFWNDTILE_VAL, bDefWndTile);
 }
 
-LONG ClassicTileRegUtil::SetRegDefWndTile(DWORD dwDefWndTile)
+LONG ClassicTileRegUtil::SetRegDefWndTile(bool bDefWndTile)
 {
-    return SetDWORDRegValue(REG_KEY_PATH, REG_DEFWNDTILE_VAL, dwDefWndTile, true);
+    return SetBoolRegValue(REG_KEY_PATH, REG_DEFWNDTILE_VAL, bDefWndTile, true);
 }

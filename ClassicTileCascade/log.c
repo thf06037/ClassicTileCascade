@@ -166,3 +166,58 @@ void log_log(int level, const char *file, int line, const char *fmt, ...) {
 
   unlock();
 }
+
+//Added by thf
+static int log_find_fp_ex(FILE* fp, int level, int* pLocation)
+{
+    _Bool bFound = 0;
+    if (pLocation) {
+        *pLocation = -1;
+    }
+    for (int i = 0; !bFound && (i < MAX_CALLBACKS) && L.callbacks[i].fn ; i++) {
+        Callback* pCB = &L.callbacks[i];
+        bFound = ((pCB->fn == &file_callback) && (pCB->udata == fp) && (pCB->level == level));
+        if (bFound && pLocation) {
+            *pLocation = i;
+        }
+    }
+
+    return bFound ? 0 : -1;
+}
+
+int log_find_fp(FILE* fp, int level)
+{
+    return log_find_fp_ex(fp, level, NULL);
+}
+
+int log_remove_fp(FILE* fp, int level)
+{
+    _Bool bFound = 0;
+    _Bool bFoundOne = 0;
+
+    do {
+        int position = 0;
+        bFound = (log_find_fp_ex(fp, level, &position) == 0);
+        if (bFound) {
+            if (!bFoundOne) {
+                bFoundOne = 1;
+            }
+
+            for (int i = position; (i < MAX_CALLBACKS) && L.callbacks[i].fn; i++) {
+                Callback* pCB = &L.callbacks[i];
+                if (i == (MAX_CALLBACKS - 1)) {
+                    pCB->fn = NULL;
+                    pCB->level = 0;
+                    pCB->udata = NULL;
+                }else {
+                    Callback* pNextCB = &L.callbacks[i + 1];
+                    pCB->fn = pNextCB->fn;
+                    pCB->level = pNextCB->level;
+                    pCB->udata = pNextCB->udata;
+                }
+            }
+        }
+    } while (bFound);
+
+    return bFoundOne ? 0 : -1;
+}

@@ -77,6 +77,7 @@ using SPHMENU = std::unique_ptr<HMENU, HMENU_deleter>;
 using SPHWND = std::unique_ptr<HWND, HWND_deleter>;
 using SPHICON = std::unique_ptr<HICON, HICON_deleter>;
 using SPFILE = std::unique_ptr<FILE, FILE_deleter>;
+using SPFILE_SHARED = std::shared_ptr<FILE>;
 using SPHANDLE_EX = std::unique_ptr<HANDLE, HANDLE_deleter>;
 
 struct CCoInitialize
