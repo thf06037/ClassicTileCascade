@@ -58,10 +58,8 @@ const ClassicTileWnd::MenuId2MenuItem ClassicTileWnd::File2DefaultMap = []() {
     return reverse_map;
 }();
 
-ClassicTileWnd::ClassicTileWnd(SPFILE_SHARED pLogFP)
-{
-    m_pLogFP = pLogFP;
-}
+ClassicTileWnd::ClassicTileWnd(FILE* pLogFP)
+    : m_pLogFP(pLogFP){}
 
 bool ClassicTileWnd::InitInstance(HINSTANCE hInstance)
 {
@@ -90,7 +88,7 @@ bool ClassicTileWnd::InitInstance(HINSTANCE hInstance)
         ClassicTileRegUtil::GetRegLogging(m_bLogging);
         if (m_bLogging) {
             if (m_pLogFP) {
-                log_add_fp(m_pLogFP.get(), LOG_TRACE);
+                log_add_fp(m_pLogFP, LOG_TRACE);
             }else {
                 generate_fatal("Invalid log file stream.");
             }
@@ -466,8 +464,8 @@ void ClassicTileWnd::OnSettingsLogging(HWND hwnd)
         eval_error_es(ClassicTileRegUtil::SetRegLogging(m_bLogging));
 
         if (m_bLogging) {
-            if (log_find_fp(m_pLogFP.get(), LOG_TRACE) != 0) {
-                eval_error_es(log_add_fp(m_pLogFP.get(), LOG_TRACE));
+            if (log_find_fp(m_pLogFP, LOG_TRACE) != 0) {
+                eval_error_es(log_add_fp(m_pLogFP, LOG_TRACE));
                 log_info("Logging enabled.");
             }
 
@@ -485,7 +483,7 @@ void ClassicTileWnd::OnSettingsLogging(HWND hwnd)
 
             std::wstring szLogPath;
             
-            eval_error_nz(CTWinUtils::GetFinalPathNameByFILE( m_pLogFP.get(), szLogPath));
+            eval_error_nz(CTWinUtils::GetFinalPathNameByFILE(m_pLogFP, szLogPath));
 
             std::wstring szMessage;
             szMessage = std::format(MSG_BOX_FMT_LOGGING, szLogPath);
@@ -494,9 +492,9 @@ void ClassicTileWnd::OnSettingsLogging(HWND hwnd)
             eval_error_es(::TaskDialogIndirect(&tdc, nullptr, nullptr, nullptr));
 
         }else{
-            if (log_find_fp(m_pLogFP.get(), LOG_TRACE) == 0) {
+            if (log_find_fp(m_pLogFP, LOG_TRACE) == 0) {
                 log_info("Disabling logging");
-                eval_error_es(log_remove_fp(m_pLogFP.get(), LOG_TRACE));
+                eval_error_es(log_remove_fp(m_pLogFP, LOG_TRACE));
             }
         }
     }catch (const LoggingException& le) {
@@ -656,7 +654,7 @@ bool ClassicTileWnd::RegUnReg(bool& fSuccess)
             std::wstring szExePath;
             CTWinUtils::GetCurrModuleFileName(szExePath);
 
-            log_add_fp(m_pLogFP.get(), LOG_TRACE);
+            log_add_fp(m_pLogFP, LOG_TRACE);
 
             log_info("ProcID <%u>: <%S> command line argument passed.", dwProcId, szFirstArg.c_str());
 

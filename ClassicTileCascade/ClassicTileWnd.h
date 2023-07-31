@@ -9,7 +9,8 @@
 class ClassicTileWnd
 {
 public:
-	ClassicTileWnd(SPFILE_SHARED pLogFP);
+	//ClassicTileWnd(SPFILE_SHARED pLogFP);
+	ClassicTileWnd(FILE* pLogFP);
 	bool InitInstance(HINSTANCE hInstance);
 	bool RegUnReg(bool& fSuccess);
 	
@@ -90,6 +91,6 @@ protected:
 	bool m_bAutoStart = false;
 	bool m_bDefWndTile = false;
 	HWND m_hwndTaskDlg = nullptr;
-	SPFILE_SHARED m_pLogFP{ nullptr, FILE_deleter{} };
+	FILE* m_pLogFP = nullptr;
 };
 

@@ -33,8 +33,8 @@
 const static std::wstring MUTEX_GUID = L"{436805EB-7307-4A82-A1AB-C87DC5EE85B6";
 
 bool GetLogPath(std::string& szLogPath);
-SPFILE_SHARED InitLogging();
-bool CheckAlreadyRunning();
+FILE* InitLogging();
+bool CheckAlreadyRunning(UINT uRetries);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE ,
@@ -43,12 +43,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 {
     log_set_quiet(true);
 
-    if (CheckAlreadyRunning()) {
+    if (CheckAlreadyRunning(5)) {
         return 1;
     }
 
-    SPFILE_SHARED pLogFP = InitLogging();
-
+    FILE* pLogFP = InitLogging();
     ClassicTileWnd classicTileWnd(pLogFP);
     bool bSuccess = false;
     if (classicTileWnd.RegUnReg(bSuccess)) {
@@ -67,16 +66,20 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         ::DispatchMessageW(&msg);
     }
 
+    if (pLogFP) {
+        fclose(pLogFP);
+    }
+
     return static_cast<int>(msg.wParam);
 }
 
 
-SPFILE_SHARED InitLogging()
+FILE* InitLogging()
 {
-    SPFILE_SHARED pLogFP(nullptr, FILE_deleter());
+    FILE* pLogFP = nullptr;
     std::string szLogPath;
     if (GetLogPath(szLogPath)) {
-        pLogFP.reset(_fsopen(szLogPath.c_str(), "a+", _SH_DENYWR));
+        pLogFP = _fsopen(szLogPath.c_str(), "a+", _SH_DENYWR);
     }
 
     return pLogFP;
@@ -102,8 +105,15 @@ bool GetLogPath(std::string& szLogPath)
     return fRetVal;
 }
 
-bool CheckAlreadyRunning()
+bool CheckAlreadyRunning(UINT uRetries)
 {
-    HANDLE hFirst = ::CreateMutexW(nullptr, FALSE, MUTEX_GUID.c_str());
-    return (hFirst && (::GetLastError() == ERROR_ALREADY_EXISTS));
+    bool bRetVal = true;
+    for (UINT i = 0; bRetVal && (i < uRetries); i++) {
+        HANDLE hFirst = ::CreateMutexW(nullptr, FALSE, MUTEX_GUID.c_str());
+        bRetVal = (hFirst && (::GetLastError() == ERROR_ALREADY_EXISTS));
+        if (bRetVal && (i != (uRetries - 1))) {
+            ::Sleep(500);
+        }
+    }
+    return bRetVal;
 }
