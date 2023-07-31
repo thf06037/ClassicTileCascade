@@ -58,12 +58,26 @@ const ClassicTileWnd::MenuId2MenuItem ClassicTileWnd::File2DefaultMap = []() {
     return reverse_map;
 }();
 
-ClassicTileWnd::ClassicTileWnd(FILE* pLogFP)
-    : m_pLogFP(pLogFP){}
+ClassicTileWnd::ClassicTileWnd()
+{
+    std::string szLogPath;
+    if (GetLogPath(szLogPath)) {
+        m_pLogFP.reset(_fsopen(szLogPath.c_str(), "a+", _SH_DENYWR));
+    }
+}
 
 bool ClassicTileWnd::InitInstance(HINSTANCE hInstance)
 {
     try {
+        ClassicTileRegUtil::GetRegLogging(m_bLogging);
+        if (m_bLogging) {
+            if (m_pLogFP) {
+                log_add_fp(m_pLogFP.get(), LOG_TRACE);
+            }else{
+                generate_fatal("Invalid log file stream.");
+            }
+        }
+
         try {
             eval_warn_nz(::SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2));
         }catch (const LoggingException& le) {
@@ -84,16 +98,6 @@ bool ClassicTileWnd::InitInstance(HINSTANCE hInstance)
         m_bAutoStart = (ClassicTileRegUtil::CheckRegRun() == ERROR_SUCCESS);
 
         ClassicTileRegUtil::GetRegDefWndTile(m_bDefWndTile);
-
-        ClassicTileRegUtil::GetRegLogging(m_bLogging);
-        if (m_bLogging) {
-            if (m_pLogFP) {
-                log_add_fp(m_pLogFP, LOG_TRACE);
-            }else {
-                generate_fatal("Invalid log file stream.");
-            }
-        }
-
 
         WNDCLASSEXW wcex = { 0 };
         wcex.cbSize = sizeof(wcex);
@@ -464,8 +468,8 @@ void ClassicTileWnd::OnSettingsLogging(HWND hwnd)
         eval_error_es(ClassicTileRegUtil::SetRegLogging(m_bLogging));
 
         if (m_bLogging) {
-            if (log_find_fp(m_pLogFP, LOG_TRACE) != 0) {
-                eval_error_es(log_add_fp(m_pLogFP, LOG_TRACE));
+            if (log_find_fp(m_pLogFP.get(), LOG_TRACE) != 0) {
+                eval_error_es(log_add_fp(m_pLogFP.get(), LOG_TRACE));
                 log_info("Logging enabled.");
             }
 
@@ -483,7 +487,7 @@ void ClassicTileWnd::OnSettingsLogging(HWND hwnd)
 
             std::wstring szLogPath;
             
-            eval_error_nz(CTWinUtils::GetFinalPathNameByFILE(m_pLogFP, szLogPath));
+            eval_error_nz(CTWinUtils::GetFinalPathNameByFILE(m_pLogFP.get(), szLogPath));
 
             std::wstring szMessage;
             szMessage = std::format(MSG_BOX_FMT_LOGGING, szLogPath);
@@ -492,10 +496,11 @@ void ClassicTileWnd::OnSettingsLogging(HWND hwnd)
             eval_error_es(::TaskDialogIndirect(&tdc, nullptr, nullptr, nullptr));
 
         }else{
-            if (log_find_fp(m_pLogFP, LOG_TRACE) == 0) {
+            if (log_find_fp(m_pLogFP.get(), LOG_TRACE) == 0) {
                 log_info("Disabling logging");
-                eval_error_es(log_remove_fp(m_pLogFP, LOG_TRACE));
+                eval_error_es(log_remove_fp(m_pLogFP.get(), LOG_TRACE));
             }
+
         }
     }catch (const LoggingException& le) {
         le.Log();
@@ -654,7 +659,7 @@ bool ClassicTileWnd::RegUnReg(bool& fSuccess)
             std::wstring szExePath;
             CTWinUtils::GetCurrModuleFileName(szExePath);
 
-            log_add_fp(m_pLogFP, LOG_TRACE);
+            log_add_fp(m_pLogFP.get(), LOG_TRACE);
 
             log_info("ProcID <%u>: <%S> command line argument passed.", dwProcId, szFirstArg.c_str());
 
@@ -782,4 +787,25 @@ bool ClassicTileWnd::Unregister()
 
     log_info("ProcID <%u>: ClassicTileCascade %s", dwProcId, fSuccess ? "unregistered" : "unregister failed");
     return fSuccess;
+}
+
+
+bool ClassicTileWnd::GetLogPath(std::string& szLogPath)
+{
+    const static std::string LOG_NAME = "ClassicTileCascade.log";
+    bool fRetVal = false;
+    LPWSTR lpwstrPath = nullptr;
+
+    HRESULT hr = ::SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, NULL, &lpwstrPath);
+    if (SUCCEEDED(hr)) {
+        std::wstring strPath = lpwstrPath;
+        ::CoTaskMemFree(lpwstrPath);
+
+        std::string szPath;
+        CTWinUtils::Wstring2string(szPath, strPath);
+
+        CTWinUtils::PathCombineEx(szLogPath, szPath, LOG_NAME);
+        fRetVal = true;
+    }
+    return fRetVal;
 }

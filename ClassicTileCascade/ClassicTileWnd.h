@@ -9,12 +9,10 @@
 class ClassicTileWnd
 {
 public:
-	//ClassicTileWnd(SPFILE_SHARED pLogFP);
-	ClassicTileWnd(FILE* pLogFP);
+	ClassicTileWnd();
 	bool InitInstance(HINSTANCE hInstance);
 	bool RegUnReg(bool& fSuccess);
 	
-	ClassicTileWnd() = delete;
 	ClassicTileWnd(const ClassicTileWnd&) = delete;
 	ClassicTileWnd(ClassicTileWnd&&) = delete;
 	ClassicTileWnd& operator=(const ClassicTileWnd&) noexcept = delete;
@@ -35,6 +33,7 @@ protected:
 		File2DefaultStruct& operator=(const File2DefaultStruct&) = default;
 		File2DefaultStruct& operator=(File2DefaultStruct&&) noexcept = default;
 	};
+	
 	using MenuId2MenuItem = std::map<UINT, File2DefaultStruct>;
 	using MenuId2MenuItemPair = std::pair<UINT, File2DefaultStruct>;
 	using TILE_CASCADE_FUNC = WORD(WINAPI*)(HWND, UINT, const RECT*, UINT, const HWND*);
@@ -51,6 +50,7 @@ protected:
 	//Static helper functions
 	static  File2DefaultStruct FindMenuId2MenuItem(const MenuId2MenuItem& menuID2MenuItem, UINT uSought);
 	static  bool Unregister();
+	static bool GetLogPath(std::string& szLogPath);
 
 	//callback functions
 	static LRESULT CALLBACK s_WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -91,6 +91,6 @@ protected:
 	bool m_bAutoStart = false;
 	bool m_bDefWndTile = false;
 	HWND m_hwndTaskDlg = nullptr;
-	FILE* m_pLogFP = nullptr;
+	SPFILE m_pLogFP;
 };
 

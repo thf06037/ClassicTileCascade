@@ -32,8 +32,6 @@
 
 const static std::wstring MUTEX_GUID = L"{436805EB-7307-4A82-A1AB-C87DC5EE85B6";
 
-bool GetLogPath(std::string& szLogPath);
-FILE* InitLogging();
 bool CheckAlreadyRunning(UINT uRetries);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -47,8 +45,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return 1;
     }
 
-    FILE* pLogFP = InitLogging();
-    ClassicTileWnd classicTileWnd(pLogFP);
+    ClassicTileWnd classicTileWnd;
     bool bSuccess = false;
     if (classicTileWnd.RegUnReg(bSuccess)) {
         return bSuccess ? 0 : 1;
@@ -66,43 +63,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         ::DispatchMessageW(&msg);
     }
 
-    if (pLogFP) {
-        fclose(pLogFP);
-    }
-
     return static_cast<int>(msg.wParam);
-}
-
-
-FILE* InitLogging()
-{
-    FILE* pLogFP = nullptr;
-    std::string szLogPath;
-    if (GetLogPath(szLogPath)) {
-        pLogFP = _fsopen(szLogPath.c_str(), "a+", _SH_DENYWR);
-    }
-
-    return pLogFP;
-}
-
-bool GetLogPath(std::string& szLogPath)
-{
-    const static std::string LOG_NAME = "ClassicTileCascade.log";
-    bool fRetVal = false;
-    LPWSTR lpwstrPath = nullptr;
-
-    HRESULT hr = ::SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, NULL, &lpwstrPath);
-    if (SUCCEEDED(hr)) {
-        std::wstring strPath = lpwstrPath;
-        ::CoTaskMemFree(lpwstrPath);
-
-        std::string szPath;
-        CTWinUtils::Wstring2string(szPath, strPath);
-
-        CTWinUtils::PathCombineEx(szLogPath, szPath, LOG_NAME);
-        fRetVal = true;
-    }
-    return fRetVal;
 }
 
 bool CheckAlreadyRunning(UINT uRetries)
@@ -112,6 +73,7 @@ bool CheckAlreadyRunning(UINT uRetries)
         HANDLE hFirst = ::CreateMutexW(nullptr, FALSE, MUTEX_GUID.c_str());
         bRetVal = (hFirst && (::GetLastError() == ERROR_ALREADY_EXISTS));
         if (bRetVal && (i != (uRetries - 1))) {
+            ::CloseHandle(hFirst);
             ::Sleep(500);
         }
     }
