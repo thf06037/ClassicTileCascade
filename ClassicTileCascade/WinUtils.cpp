@@ -21,9 +21,6 @@
  */
 
 
- //ShellExecInExplorerProcess is adapted from WindowsSDK7-Samples/winui/shell/appplatform/ExecInExplorer/ExecInExplorer.cpp
- //https://github.com/pauldotknopf/WindowsSDK7-Samples/tree/master/winui/shell/appplatform/ExecInExplorer
-
 #include "pch.h"
 #include "win_log.h"
 #include "MemMgmt.h"

@@ -7,7 +7,11 @@
 #pragma once
 #include "win_log.h"
 
+// Type definitions of smart pointers, with custom deleters for various Win32 object types
+// Also includes a utility class (CCoInitialize) for automatically calling CoInitialize and 
+// CoUnitialize at entry/exit of scope
 
+// Custom deleters
 struct HKEY_deleter {
     void operator()(HKEY hKey)
     {
@@ -72,6 +76,7 @@ struct HANDLE_deleter {
     using pointer = HANDLE;
 };
 
+// Type definitions of various smart pointers for use with Win32 object types
 using SPHKEY = std::unique_ptr<HKEY, HKEY_deleter>;
 using SPHMENU = std::unique_ptr<HMENU, HMENU_deleter>;
 using SPHWND = std::unique_ptr<HWND, HWND_deleter>;
@@ -79,6 +84,8 @@ using SPHICON = std::unique_ptr<HICON, HICON_deleter>;
 using SPFILE = std::unique_ptr<FILE, FILE_deleter>;
 using SPHANDLE_EX = std::unique_ptr<HANDLE, HANDLE_deleter>;
 
+// Utility class (CCoInitialize) for automatically calling CoInitialize and 
+// CoUnitialize at entry/exit of scope
 struct CCoInitialize
 {
     CCoInitialize()

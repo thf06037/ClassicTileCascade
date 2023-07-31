@@ -39,22 +39,37 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_ LPWSTR,
                      _In_ int )
 {
+    // This function call ensures that we don't log anything to stderr. 
+    // In InitInstance, the ClassicTileWnd class will determine whether file 
+    // logging is on or off based on thesetting in "Settings | Logging" menu item
     log_set_quiet(true);
 
+    // Letting the application run more than once would create multiple 
+    // notification icons. This function uses a mutex to determine whether
+    // app is already running. ABEND if another instance is running.
     if (CheckAlreadyRunning(5)) {
         return 1;
     }
 
     ClassicTileWnd classicTileWnd;
     bool bSuccess = false;
+
+    // Check whether the /REGISTER,/UNREGISTER, /REGISTERUSER
+    // or /UNREGISTERUSER command line parameters have been passed
+    // These are passed by the Windows installer to orchestrate the 
+    // creation or deletion of the registry entries for the application
     if (classicTileWnd.RegUnReg(bSuccess)) {
         return bSuccess ? 0 : 1;
     }
     
+    // No command line parameters passed - create notification icon and
+    // wire the message handlers for the notification icon
     if (!classicTileWnd.InitInstance(hInstance)){
         return 1;
     }
 
+    // if we made it to here, our notification icon is created and 
+    // message handlers are set up. Run a normal windows msg loop
     MSG msg;
 
     while (::GetMessageW(&msg, nullptr, 0, 0) > 0)

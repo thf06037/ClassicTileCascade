@@ -24,13 +24,14 @@
 #include "WinUtils.h"
 #include "ClassicTileRegUtil.h"
 
+//helper functions
 LONG OpenOrCreateRegKey(const std::wstring& szPath, bool bCreate, SPHKEY& hKey);
 LONG GetDWORDRegValue(const std::wstring& szPath, const std::wstring& szValueName, DWORD& dwValue);
 LONG SetDWORDRegValue(const std::wstring& szPath, const std::wstring& szValueName, DWORD dwValue, bool bCreate);
-
 LONG GetBoolRegValue(const std::wstring& szPath, const std::wstring& szValueName, bool& bValue);
 LONG SetBoolRegValue(const std::wstring& szPath, const std::wstring& szValueName, bool bValue, bool bCreate);
 
+//Registry paths and value names
 const static std::wstring REG_KEY_PATH = L"Software\\thf\\ClassicTileCascade";
 const static std::wstring REG_KEY_PARENT_PATH = L"Software\\thf";
 const static std::wstring REG_LEFT_CLICK_VAL = L"LeftClickAction";
@@ -90,6 +91,8 @@ LONG ClassicTileRegUtil::CheckRegAppPath()
     return OpenOrCreateRegKey(REG_KEY_PATH.c_str(), false, hKey);
 }
 
+// Delete the main registry app path. The parent path ("Software\\thf") is the direct decendent of HKCU\Software.
+// If the parent path has no child keys or values, delete it too.
 LONG ClassicTileRegUtil::DeleteRegAppPath()
 {
     LONG lResult = ::RegDeleteKeyW(HKEY_CURRENT_USER, REG_KEY_PATH.c_str());

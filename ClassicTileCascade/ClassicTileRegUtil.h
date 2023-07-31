@@ -6,6 +6,7 @@
  */
 #pragma once
 
+// Library of registry functions for serializing state of notification item settings 
 namespace ClassicTileRegUtil
 {
 	LONG CheckRegAppPath();

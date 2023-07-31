@@ -6,6 +6,17 @@
  */
 #pragma once
 
+// Library of evaluation functions/macros that will check success of various result types
+// (non-zero, "ERROR_SUCCESS" (i.e. check that result == 0), and HRESULT (check SUCCESS())).
+// For each result type, if the result is not the success result, the function/macros will 
+// throw an exception decended from class LoggingException. 
+// LoggingException has a virtual  function "Log()" that can be called from the error handler (catch block). 
+// This function will use the log.c functionality to log info based on the exception type/# to the log file setup 
+// for the project. There is also an all - purpose function (generate_exception) that will throw a 
+// LoggingException with a user-defined message.
+
+// For details on log.c see https://github.com/rxi/log.c
+
 extern "C"
 {
 #include "log.h"
@@ -80,8 +91,12 @@ public:
 	void Log() const override;
 };
 
+// Evaluate dwError for == ERROR_SUCCESS (i.e. == 0). if dwError !=ERROR_SUCCESS, throw a DWLoggingException. 
+// DWLoggingException::Log() will call FormatMessage to provide the error description in the log ifle
 DWORD eval_log_errorsuccess_getlasterror(int level, const std::string& file, int line, const std::string& function, const std::string& functionCalled, DWORD dwError);
 
+// Evaluate valNonZero for != 0. If valNonZero  == 0, throw a DWLoggingException. 
+// DWLoggingException::Log() will call FormatMessage to provide the error description in the log ifle
 template<class T>
 T eval_log_nonzero_getlasterror(int level, const std::string& file, int line, const std::string& function, const std::string& functionCalled, const T& valNonZero)
 {
@@ -91,10 +106,18 @@ T eval_log_nonzero_getlasterror(int level, const std::string& file, int line, co
 	return valNonZero;
 }
 
+// Evaluate hr for SUCCESS(hr). If FAILED(hr), throw a HRLoggingException. 
+// HRLoggingException::Log() will call GetErrorInfo to try to retrieve the the error description in the log file.
+// If GetErrorInfo fails, falls back FormatMessage to provide the error description in the log file
 HRESULT eval_log_getcomerror(int level, const char* file, int line, const std::string& function, const std::string& functionCalled, HRESULT hr);
 
+//All-purpose function that will throw a MsgLoggingException with a user-defined message.
 void generate_exception(int level, const char* file, int line, const std::string& function, const std::string& msg);
 
+// Macro definitions for each return type and Logging level. The macros will automatically provide
+// the file, line, and function calling to the eval*/generate functions above.
+// The eval* macros will also provide the function that was called
+// The logging levels are defined in the log.c documentation. See https://github.com/rxi/log.c
 #define eval_trace_es(fn) eval_log_errorsuccess_getlasterror(LOG_TRACE, __FILE__, __LINE__, __FUNCSIG__, #fn,  fn)
 #define eval_debug_es(fn) eval_log_errorsuccess_getlasterror(LOG_DEBUG, __FILE__, __LINE__, __FUNCSIG__, #fn,  fn)
 #define eval_info_es(fn) eval_log_errorsuccess_getlasterror(LOG_INFO, __FILE__, __LINE__, __FUNCSIG__, #fn,  fn)
