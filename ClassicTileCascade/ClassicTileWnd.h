@@ -71,9 +71,12 @@ protected:
 	LRESULT CTWWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 	//Static helper functions
-	static  File2DefaultStruct FindMenuId2MenuItem(const MenuId2MenuItem& menuID2MenuItem, UINT uSought);
+	//static  File2DefaultStruct FindMenuId2MenuItem(const MenuId2MenuItem& menuID2MenuItem, UINT uSought);
+	static  const File2DefaultStruct& FindMenuId2MenuItem(const MenuId2MenuItem& menuID2MenuItem, UINT uSought);
+	static  bool RegUnRegAsUser(const std::wstring& szFirstArg);
 	static  bool Unregister();
-	static bool GetLogPath(std::string& szLogPath);
+	static  bool Register();
+	static  void OpenTextFile(HWND hwnd, const std::wstring& szPath);
 
 	//callback functions
 	static LRESULT CALLBACK s_WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -97,6 +100,9 @@ protected:
 	void OnSettingsLogging(HWND hwnd);
 	void OnSettingsDefWndTile();
 
+	//Task Dialog msg handlers
+	void OnHyperlinkClick(LPARAM lpszURL) const;
+
 protected:
 	//class constants
 
@@ -116,8 +122,13 @@ protected:
 	const static MenuId2MenuItem Default2FileMap;
 	const static MenuId2MenuItem File2DefaultMap;
 
+	const static std::wstring CURR_MODULE_PATH;
+	const static std::wstring LOG_PATH;
+	const static std::string LOG_PATH_NARROW;
+
 protected:
 	//instance members
+
 
 	// HINSTANCE handle for use in member functions that need to access 
 	// resources, etc.

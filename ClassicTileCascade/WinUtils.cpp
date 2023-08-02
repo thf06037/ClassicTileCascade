@@ -261,3 +261,39 @@ bool CTWinUtils::GetFinalPathNameByFILE(FILE* pFile, std::wstring& szPath)
     }
     return bRetVal;
 }
+
+
+
+bool CTWinUtils::CreateProcessHelper(const std::wstring& szCommand, const std::wstring& szArguments, LPDWORD lpdwProcId, int nShowWindow)
+{
+    bool bRetVal = false;
+    if (lpdwProcId) {
+        *lpdwProcId = 0;
+    }
+
+    STARTUPINFO si = { 0 };
+    si.cb = sizeof(si);
+    if (nShowWindow >= 0) {
+        si.dwFlags |= STARTF_USESHOWWINDOW;
+        si.wShowWindow = static_cast<WORD>(nShowWindow);
+    }
+
+    PROCESS_INFORMATION pi = { 0 };
+    
+    std::wstring szCommandLine = L"\"" + szCommand + L"\"";
+    if (!szArguments.empty()) {
+        szCommandLine += L" ";
+        szCommandLine += szArguments;
+    }
+
+    bRetVal = (::CreateProcessW(nullptr, szCommandLine.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi) == TRUE);
+    if (bRetVal) {
+        ::CloseHandle(pi.hProcess);
+        ::CloseHandle(pi.hThread);
+
+        if (lpdwProcId) {
+            *lpdwProcId = pi.dwProcessId;
+        }
+    }
+    return bRetVal;
+}

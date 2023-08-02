@@ -39,7 +39,6 @@
 #pragma comment(lib,"htmlhelp.lib")
 #include <string>
 #include <memory>
-#include <regex>
 #include <algorithm>
 #include <io.h>
 #endif //PCH_H

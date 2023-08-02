@@ -47,7 +47,6 @@ const ClassicTileWnd::MenuId2MenuItem ClassicTileWnd::Default2FileMap = {
     {ID_DEFAULT_SHOWWINDOWSSIDEBYSIDE, File2DefaultStruct(ID_DEFAULT_SHOWWINDOWSSIDEBYSIDE, ID_FILE_SHOWWINDOWSSIDEBYSIDE)},
     {ID_DEFAULT_SHOWWINDOWSSTACKED,File2DefaultStruct(ID_DEFAULT_SHOWWINDOWSSTACKED,ID_FILE_SHOWWINDOWSSTACKED)},
     {ID_DEFAULT_UNDOMINIMIZE, File2DefaultStruct(ID_DEFAULT_UNDOMINIMIZE,ID_FILE_UNDOMINIMIZE)}
-
 };
 
 const ClassicTileWnd::MenuId2MenuItem ClassicTileWnd::File2DefaultMap = []() {
@@ -58,12 +57,38 @@ const ClassicTileWnd::MenuId2MenuItem ClassicTileWnd::File2DefaultMap = []() {
     return reverse_map;
 }();
 
+const std::wstring ClassicTileWnd::CURR_MODULE_PATH = []() {
+    std::wstring szCurrModulePath;
+    CTWinUtils::GetCurrModuleFileName(szCurrModulePath);
+    return szCurrModulePath;
+}();
+
+const std::wstring ClassicTileWnd::LOG_PATH = []() {
+    const static std::wstring LOG_NAME = L"ClassicTileCascade.log";
+
+    std::wstring szLogPath;
+
+    LPWSTR lpwstrPath = nullptr;
+    HRESULT hr = ::SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, NULL, &lpwstrPath);
+    if (SUCCEEDED(hr)) {
+        std::wstring szPath = lpwstrPath;
+        ::CoTaskMemFree(lpwstrPath);
+
+        CTWinUtils::PathCombineEx(szLogPath, szPath, LOG_NAME);
+    }
+
+    return szLogPath;
+}();
+
+const std::string ClassicTileWnd::LOG_PATH_NARROW = []() {
+    std::string szLogPathNarrow;
+    CTWinUtils::Wstring2string(szLogPathNarrow, LOG_PATH);
+    return szLogPathNarrow;
+}();
+
 ClassicTileWnd::ClassicTileWnd()
 {
-    std::string szLogPath;
-    if (GetLogPath(szLogPath)) {
-        m_pLogFP.reset(_fsopen(szLogPath.c_str(), "a+", _SH_DENYWR));
-    }
+    m_pLogFP.reset(_fsopen(LOG_PATH_NARROW.c_str(), "a+", _SH_DENYWR));
 }
 
 bool ClassicTileWnd::InitInstance(HINSTANCE hInstance)
@@ -301,6 +326,10 @@ void ClassicTileWnd::OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         OnSettingsDefWndTile();
         break;
 
+    case ID_SETTINGS_OPENLOGFILE:
+        OpenTextFile(hwnd, LOG_PATH);
+        break;
+
     default:
         FORWARD_WM_COMMAND(hwnd, id, hwndCtl, codeNotify, DefWindowProcW);
         break;
@@ -406,8 +435,7 @@ void ClassicTileWnd::OnHelp(HWND hwnd) const
     try {
         const static std::wstring CHM_PATH = []() {
             const static std::wstring CHM_FILE_NAME = L"ClassicTileCascadeHelp.chm";
-            std::wstring szExePath;
-            eval_error_nz(CTWinUtils::GetCurrModuleFileName(szExePath));
+            std::wstring szExePath = CURR_MODULE_PATH;
 
             eval_error_es( ::PathCchRemoveFileSpec(szExePath.data(), szExePath.size()) );
             CTWinUtils::RemoveFromNull(szExePath);
@@ -459,12 +487,14 @@ void ClassicTileWnd::OnSettingsAutoStart()
 
 void ClassicTileWnd::OnSettingsLogging(HWND hwnd)
 {
-    static constexpr wchar_t MSG_BOX_FMT_LOGGING[] = L"Log files are stored at: {0}.";
     static const std::wstring MSG_BOX_MAIN = L"Logging enabled.";
-
-    m_bLogging = !m_bLogging;
+    
+    static constexpr wchar_t MSG_BOX_FMT_LOGGING[] = L"Log files are stored at: <A HREF=\"{0}\">{0}</A>.";
+    static const std::wstring MSG_BOX_CONTENT = std::format(MSG_BOX_FMT_LOGGING, LOG_PATH);
 
     try {
+        m_bLogging = !m_bLogging;
+
         eval_error_es(ClassicTileRegUtil::SetRegLogging(m_bLogging));
 
         if (m_bLogging) {
@@ -478,23 +508,15 @@ void ClassicTileWnd::OnSettingsLogging(HWND hwnd)
             tdc.hwndParent = hwnd;
             tdc.hInstance = m_hInst;
             tdc.dwCommonButtons = TDCBF_OK_BUTTON;
-            tdc.pszWindowTitle = L"Info";
+            tdc.pszWindowTitle = L"Classic Tile Cascade";
             tdc.pszMainIcon = TD_INFORMATION_ICON;
             tdc.pszMainInstruction = MSG_BOX_MAIN.c_str();
             tdc.pfCallback = s_TaskDlgProc;
             tdc.lpCallbackData = reinterpret_cast<LONG_PTR>(this);
-            tdc.dwFlags = TDF_SIZE_TO_CONTENT;
-
-            std::wstring szLogPath;
-            
-            eval_error_nz(CTWinUtils::GetFinalPathNameByFILE(m_pLogFP.get(), szLogPath));
-
-            std::wstring szMessage;
-            szMessage = std::format(MSG_BOX_FMT_LOGGING, szLogPath);
-            tdc.pszContent = szMessage.c_str();
+            tdc.dwFlags = TDF_SIZE_TO_CONTENT | TDF_ENABLE_HYPERLINKS;
+            tdc.pszContent = MSG_BOX_CONTENT.c_str();
 
             eval_error_es(::TaskDialogIndirect(&tdc, nullptr, nullptr, nullptr));
-
         }else{
             if (log_find_fp(m_pLogFP.get(), LOG_TRACE) == 0) {
                 log_info("Disabling logging");
@@ -504,8 +526,7 @@ void ClassicTileWnd::OnSettingsLogging(HWND hwnd)
         }
     }catch (const LoggingException& le) {
         le.Log();
-    }
-    catch (...) {
+    }catch (...) {
         log_error("Unhandled exception");
     }
 }
@@ -539,7 +560,7 @@ void ClassicTileWnd::GetToolTip()
     }
 }
 
-HRESULT CALLBACK ClassicTileWnd::s_TaskDlgProc(HWND hwnd, UINT msg, WPARAM, LPARAM, LONG_PTR lpRefData)
+HRESULT CALLBACK ClassicTileWnd::s_TaskDlgProc(HWND hwnd, UINT msg, WPARAM, LPARAM lParam, LONG_PTR lpRefData)
 {
     if (lpRefData) {
         ClassicTileWnd* pThis = reinterpret_cast<ClassicTileWnd*>(lpRefData);
@@ -551,6 +572,10 @@ HRESULT CALLBACK ClassicTileWnd::s_TaskDlgProc(HWND hwnd, UINT msg, WPARAM, LPAR
 
         case TDN_DESTROYED:
             pThis->m_hwndTaskDlg = nullptr;
+            break;
+
+        case TDN_HYPERLINK_CLICKED:
+            pThis->OnHyperlinkClick(lParam);
             break;
         }
     }
@@ -604,7 +629,7 @@ BOOL CALLBACK ClassicTileWnd::EnumProc(HWND hwnd, LPARAM lParam)
     return TRUE;
 }
 
-ClassicTileWnd::File2DefaultStruct ClassicTileWnd::FindMenuId2MenuItem(const MenuId2MenuItem& menuID2MenuItem, UINT uSought)
+const ClassicTileWnd::File2DefaultStruct& ClassicTileWnd::FindMenuId2MenuItem(const MenuId2MenuItem& menuID2MenuItem, UINT uSought)
 {
     MenuId2MenuItem::const_iterator it = menuID2MenuItem.find(uSought);
     if (it == menuID2MenuItem.end()) {
@@ -638,10 +663,10 @@ ClassicTileWnd::File2DefaultStruct::File2DefaultStruct(UINT uDefault_, UINT uFil
 
 bool ClassicTileWnd::RegUnReg(bool& fSuccess)
 {
-    static const std::wregex REG(L"^/REGISTER$", std::regex_constants::icase);
-    static const std::wregex UNREG(L"^/UNREGISTER$", std::regex_constants::icase);
-    static const std::wregex REGUSER(L"^/REGISTERUSER$", std::regex_constants::icase);
-    static const std::wregex UNREGUSER(L"^/UNREGISTERUSER$", std::regex_constants::icase);
+    static const std::wstring REG = L"/REGISTER";
+    static const std::wstring UNREG = L"/UNREGISTER";
+    static const std::wstring REGUSER = L"/REGISTERUSER";
+    static const std::wstring UNREGUSER = L"/UNREGISTERUSER";
 
     bool fRetVal = false;
     fSuccess = false;
@@ -654,98 +679,65 @@ bool ClassicTileWnd::RegUnReg(bool& fSuccess)
         }
         LocalFree(lpszArglist);
 
-        DWORD dwProcId = ::GetCurrentProcessId();
         if (nArgs > 1) {
-            std::wstring szExePath;
-            CTWinUtils::GetCurrModuleFileName(szExePath);
-
             log_add_fp(m_pLogFP.get(), LOG_TRACE);
+
+            fRetVal = true;
+
+            DWORD dwProcId = ::GetCurrentProcessId();
 
             log_info("ProcID <%u>: <%S> command line argument passed.", dwProcId, szFirstArg.c_str());
 
-            if (std::regex_match(szFirstArg, REG) || std::regex_match(szFirstArg, UNREG)) {
+            std::transform(szFirstArg.begin(), szFirstArg.end(), szFirstArg.begin(), [](auto c) { return std::toupper(c); });
+            
+            if ( (szFirstArg == REG) || (szFirstArg == UNREG) ) {
                 //our process may be running as an elevated user. we need the registry entries to be added in
                 //a process that is running as the logged in user
-                try {
-                    std::wstring szRegUser = szFirstArg + L"USER";
-                    log_info("ProcID <%u>: Processs running at %s level.", dwProcId, IsUserAnAdmin() ? "elevated" : "regular");
-                    log_info("ProcID <%u>: <%S> parameter passed - attempting to launch app as logged in user with command line argument <%S>",
-                        dwProcId, szFirstArg.c_str(), szRegUser.c_str());
 
-                    DWORD dwNewProcID = 0;
-                    eval_fatal_nz(CTWinUtils::ShellExecInExplorerProcess(szExePath, szRegUser, &dwNewProcID));
-
-                    log_info("ProcID <%u>: Launched app as standard user with ProcID <%u>", dwProcId, dwNewProcID);
-
-                    fSuccess = true;
-                }
-                catch (const LoggingException& le) {
-                    le.Log();
-                    fSuccess = false;
-                }
-                catch (...) {
-                    log_error("Unhandled exception");
-                    fSuccess = false;
-                }
-                fRetVal = true;
-            }
-            else if (std::regex_match(szFirstArg, REGUSER) || std::regex_match(szFirstArg, UNREGUSER)) {
+                fSuccess = RegUnRegAsUser(szFirstArg);
+            } else if ( (szFirstArg == REGUSER) || (szFirstArg == UNREGUSER) ) {
                 log_info("ProcID <%u>: <%S> parameter passed - starting register/unregister process", dwProcId, szFirstArg.c_str());
 
                 fSuccess = Unregister();
 
-                if (fSuccess && std::regex_match(szFirstArg, REGUSER)) {
-                    fSuccess = false;
-
-                    log_info("ProcID <%u>: Starting register process.", dwProcId);
-                    try {
-                        eval_error_es(ClassicTileRegUtil::SetRegLeftClickAction(ID_FILE_CASCADEWINDOWS));
-                        log_info("ProcID <%u>: Added Left Click Action registry value.", dwProcId);
-
-                        eval_error_es(ClassicTileRegUtil::SetRegLogging(0));
-                        log_info("ProcID <%u>: Added Logging registry value.", dwProcId);
-
-                        eval_error_es(ClassicTileRegUtil::SetRegDefWndTile(0));
-                        log_info("ProcID <%u>: Added Default/Custom Window Tile/Cascade registry value.", dwProcId);
-
-                        eval_error_es(ClassicTileRegUtil::SetRegRun());
-                        log_info("ProcID <%u>: Added Auto Run registry value.", dwProcId);
-
-                        log_info("ProcID <%u>: Attempting to start interactive application.", dwProcId);
-                        STARTUPINFO si = { 0 };
-                        si.cb = sizeof(si);
-
-                        PROCESS_INFORMATION pi = { 0 };
-                        std::wstring szCommandLine = L"\"" + szExePath + L"\"";
-                        eval_error_nz(::CreateProcessW(nullptr, szCommandLine.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi));
-                        ::CloseHandle(pi.hProcess);
-                        ::CloseHandle(pi.hThread);
-                        log_info("ProcID <%u>: Interactive application started successfully with ProcID <%u>.", dwProcId, pi.dwProcessId);
-
-                        fSuccess = true;
-                    }
-                    catch (const LoggingException& le) {
-                        le.Log();
-                        fSuccess = false;
-                    }
-                    catch (...) {
-                        log_error("Unhandled exception");
-                        fSuccess = false;
-                    }
-
-                    log_info("ProcID <%u>: ClassicTileCascade %s", dwProcId, fSuccess ? "registered" : "register failed");
+                if (fSuccess && (szFirstArg == REGUSER) ) {
+                    fSuccess = Register();
                 }
-                fRetVal = true;
             }else{
                 log_fatal("ProcID <%u>: <%S> unrecognized command line argument.", dwProcId, szFirstArg.c_str());
                 fSuccess = false;
-                fRetVal = true;
             }
         }
     }
 
     return fRetVal;
 
+}
+
+bool ClassicTileWnd::RegUnRegAsUser(const std::wstring& szFirstArg)
+{
+    DWORD dwProcId = ::GetCurrentProcessId();
+    bool fSuccess = false;
+    try {
+        std::wstring szRegUser = szFirstArg + L"USER";
+        log_info("ProcID <%u>: Processs running at %s level.", dwProcId, IsUserAnAdmin() ? "elevated" : "regular");
+        log_info("ProcID <%u>: <%S> parameter passed - attempting to launch app as logged in user with command line argument <%S>",
+            dwProcId, szFirstArg.c_str(), szRegUser.c_str());
+
+        DWORD dwNewProcID = 0;
+        eval_fatal_nz(CTWinUtils::ShellExecInExplorerProcess(CURR_MODULE_PATH, szRegUser, &dwNewProcID));
+
+        log_info("ProcID <%u>: Launched app as standard user with ProcID <%u>", dwProcId, dwNewProcID);
+
+        fSuccess = true;
+    } catch (const LoggingException& le) {
+        le.Log();
+        fSuccess = false;
+    } catch (...) {
+        log_error("Unhandled exception");
+        fSuccess = false;
+    }
+    return fSuccess;
 }
 
 bool ClassicTileWnd::Unregister()
@@ -789,23 +781,90 @@ bool ClassicTileWnd::Unregister()
     return fSuccess;
 }
 
-
-bool ClassicTileWnd::GetLogPath(std::string& szLogPath)
+bool ClassicTileWnd::Register()
 {
-    const static std::string LOG_NAME = "ClassicTileCascade.log";
-    bool fRetVal = false;
-    LPWSTR lpwstrPath = nullptr;
+    DWORD dwProcId = ::GetCurrentProcessId();
+    log_info("ProcID <%u>: Starting register process.", dwProcId);
+    
+    bool fSuccess = false;
+    
+    try {
+        eval_error_es(ClassicTileRegUtil::SetRegLeftClickAction(ID_FILE_CASCADEWINDOWS));
+        log_info("ProcID <%u>: Added Left Click Action registry value.", dwProcId);
 
-    HRESULT hr = ::SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, NULL, &lpwstrPath);
-    if (SUCCEEDED(hr)) {
-        std::wstring strPath = lpwstrPath;
-        ::CoTaskMemFree(lpwstrPath);
+        eval_error_es(ClassicTileRegUtil::SetRegLogging(0));
+        log_info("ProcID <%u>: Added Logging registry value.", dwProcId);
 
-        std::string szPath;
-        CTWinUtils::Wstring2string(szPath, strPath);
+        eval_error_es(ClassicTileRegUtil::SetRegDefWndTile(0));
+        log_info("ProcID <%u>: Added Default/Custom Window Tile/Cascade registry value.", dwProcId);
 
-        CTWinUtils::PathCombineEx(szLogPath, szPath, LOG_NAME);
-        fRetVal = true;
+        eval_error_es(ClassicTileRegUtil::SetRegRun());
+        log_info("ProcID <%u>: Added Auto Run registry value.", dwProcId);
+
+        log_info("ProcID <%u>: Attempting to start interactive application.", dwProcId);
+
+        DWORD dwNewProcId = 0;
+        eval_error_nz(CTWinUtils::CreateProcessHelper(CURR_MODULE_PATH, L"", &dwNewProcId));
+
+        log_info("ProcID <%u>: Interactive application started successfully with ProcID <%u>.", dwProcId, dwNewProcId);
+
+        fSuccess = true;
+    } catch (const LoggingException& le) {
+        le.Log();
+        fSuccess = false;
+    } catch (...) {
+        log_error("Unhandled exception");
+        fSuccess = false;
     }
-    return fRetVal;
+    log_info("ProcID <%u>: ClassicTileCascade %s", dwProcId, fSuccess ? "registered" : "register failed");
+    return fSuccess;
+}
+
+void ClassicTileWnd::OnHyperlinkClick(LPARAM lpszURL) const
+{
+    try {
+        const std::wstring szURL = eval_error_nz(reinterpret_cast<LPCWSTR>(lpszURL));
+        OpenTextFile(m_niData.hWnd, szURL);
+    }catch (const LoggingException& le) {
+        le.Log();
+    }catch (...) {
+        log_error("Unhandled exception");
+    }
+
+}
+
+void ClassicTileWnd::OpenTextFile(HWND hWnd, const std::wstring& szPath)
+{
+    constexpr static wchar_t FMT_FILE_NOT_FOUND[] = L"Log file <{0}> does not exist yet.";
+
+    try {
+        const static std::wstring NOTEPAD_PATH = [] {
+            std::wstring szNotepadPath;
+            szNotepadPath.resize(MAX_PATH);
+            eval_error_nz(::SetSearchPathMode(BASE_SEARCH_PATH_ENABLE_SAFE_SEARCHMODE));
+            eval_error_nz(::SearchPathW(nullptr, L"notepad.exe", nullptr, szNotepadPath.size(), szNotepadPath.data(), nullptr));
+            CTWinUtils::RemoveFromNull(szNotepadPath);
+            return szNotepadPath;
+        }();
+
+        DWORD dwAttrib = ::GetFileAttributes(szPath.c_str());
+        if ((dwAttrib == INVALID_FILE_ATTRIBUTES) || (dwAttrib & FILE_ATTRIBUTE_DIRECTORY)) {
+            ::MessageBoxW(hWnd, std::format(FMT_FILE_NOT_FOUND, szPath).c_str(), L"Classic Tile Cascade", MB_OK | MB_ICONINFORMATION);
+        }else {
+            std::wstring szResult;
+            szResult.resize(MAX_PATH);
+            int nRetVal = reinterpret_cast<int>(::FindExecutableW(szPath.c_str(), NULL, szResult.data()));
+            if (nRetVal > 32) {
+                CTWinUtils::RemoveFromNull(szResult);
+            }else {
+                szResult = NOTEPAD_PATH;
+            }
+
+            eval_error_nz(CTWinUtils::CreateProcessHelper(szResult, szPath, nullptr, SW_SHOWMAXIMIZED));
+        }
+    }catch (const LoggingException& le) {
+        le.Log();
+    }catch (...) {
+        log_error("Unhandled exception");
+    }
 }

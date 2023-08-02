@@ -26,9 +26,11 @@ namespace CTWinUtils
 	// File/path manipulation routines
 	// Wrapper for GetModuleFileNameW
 	DWORD GetCurrModuleFileName(std::wstring& szCurrModFileName);
+
 	// Wrapper for PathCombine. Works for both wstring and string
 	template<class T>
 	bool PathCombineEx(T& szDest, const T& szDir, const T& szFile);
+
 	// Given a FILE*, get the fully qualified path of the file 
 	// pointed to by that FILE*
 	bool GetFinalPathNameByFILE(FILE* pFile, std::wstring& szPath);
@@ -50,4 +52,5 @@ namespace CTWinUtils
 		}
 	}
 
+	bool CreateProcessHelper(const std::wstring& szCommand, const std::wstring& szArguments = L"", LPDWORD lpdwProcId = nullptr, int nShowWindow = -1);
 }

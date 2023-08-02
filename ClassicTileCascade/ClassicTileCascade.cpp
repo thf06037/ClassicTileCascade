@@ -87,9 +87,11 @@ bool CheckAlreadyRunning(UINT uRetries)
     for (UINT i = 0; bRetVal && (i < uRetries); i++) {
         HANDLE hFirst = ::CreateMutexW(nullptr, FALSE, MUTEX_GUID.c_str());
         bRetVal = (hFirst && (::GetLastError() == ERROR_ALREADY_EXISTS));
-        if (bRetVal && (i != (uRetries - 1))) {
+        if (bRetVal ) {
             ::CloseHandle(hFirst);
-            ::Sleep(500);
+            if (i != (uRetries - 1)) {
+                ::Sleep(500);
+            }
         }
     }
     return bRetVal;

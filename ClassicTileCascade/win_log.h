@@ -91,6 +91,7 @@ public:
 	void Log() const override;
 };
 
+
 // Evaluate dwError for == ERROR_SUCCESS (i.e. == 0). if dwError !=ERROR_SUCCESS, throw a DWLoggingException. 
 // DWLoggingException::Log() will call FormatMessage to provide the error description in the log ifle
 DWORD eval_log_errorsuccess_getlasterror(int level, const std::string& file, int line, const std::string& function, const std::string& functionCalled, DWORD dwError);

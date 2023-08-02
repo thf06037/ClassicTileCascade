@@ -248,7 +248,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
-    <ClCompile Include="MemMgmt.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -268,25 +267,22 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
-
   <PropertyGroup>
-    <RebuildSwitch> </RebuildSwitch> 
+    <RebuildSwitch>
+    </RebuildSwitch>
     <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
   </PropertyGroup>
-
   <Target Name="BeforeRebuild">
     <PropertyGroup>
       <RebuildSwitch>-Rebuild</RebuildSwitch>
     </PropertyGroup>
   </Target>
-
   <PropertyGroup>
     <BuildDependsOn>
       $(BuildDependsOn);CustomAfterBuild
     </BuildDependsOn>
   </PropertyGroup>
-
   <Target Name="CustomAfterBuild">
-    <Exec Command="Powershell.exe -ExecutionPolicy Bypass -File  &quot;$(HelpDir)BuildHelp.ps1&quot; -HelpDir &quot;$(HelpDir.TrimEnd('\'))&quot; -TargetDir &quot;$(TargetDir.TrimEnd('\'))&quot; $(RebuildSwitch)"/>
+    <Exec Command="Powershell.exe -ExecutionPolicy Bypass -File  &quot;$(HelpDir)BuildHelp.ps1&quot; -HelpDir &quot;$(HelpDir.TrimEnd('\'))&quot; -TargetDir &quot;$(TargetDir.TrimEnd('\'))&quot; $(RebuildSwitch)" />
   </Target>
 </Project>

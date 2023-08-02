@@ -72,10 +72,9 @@ bool LoggingException::FormatMsg(DWORD dwErrVal, std::string& szErrMsg)
 }
 
 HRLoggingException::HRLoggingException(int level, const std::string& file, int line, const std::string& function, const std::string& functionCalled, HRESULT errVal)
-    : LoggingException(level, file, line, function, functionCalled)
-{
-    m_errVal = errVal;
-}
+    :   LoggingException(level, file, line, function, functionCalled),
+        m_errVal(errVal){}
+
 
 void HRLoggingException::Log() const
 {
@@ -101,10 +100,8 @@ void HRLoggingException::Log() const
 }
 
 DWLoggingException::DWLoggingException(int level, const std::string& file, int line, const std::string& function, const std::string& functionCalled, DWORD errVal)
-    : LoggingException(level, file, line, function, functionCalled)
-{
-    m_errVal = errVal;
-}
+    :   LoggingException(level, file, line, function, functionCalled),
+        m_errVal(errVal){}
 
 void DWLoggingException::Log() const
 {
@@ -119,10 +116,8 @@ void DWLoggingException::Log() const
 }
 
 MSGLoggingException::MSGLoggingException(int level, const std::string& file, int line, const std::string& function, const std::string& errMsg)
-    : LoggingException(level, file, line, function, "")
-{
-    m_errMsg = errMsg;
-}
+    :   LoggingException(level, file, line, function, ""),
+        m_errMsg(errMsg){}
 
 void MSGLoggingException::Log() const
 {

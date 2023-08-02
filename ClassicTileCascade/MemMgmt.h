@@ -76,6 +76,7 @@ struct HANDLE_deleter {
     using pointer = HANDLE;
 };
 
+
 // Type definitions of various smart pointers for use with Win32 object types
 using SPHKEY = std::unique_ptr<HKEY, HKEY_deleter>;
 using SPHMENU = std::unique_ptr<HMENU, HMENU_deleter>;

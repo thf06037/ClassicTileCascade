@@ -65,9 +65,6 @@
     <ClCompile Include="ClassicTileRegUtil.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MemMgmt.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="WinUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
