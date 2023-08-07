@@ -37,7 +37,6 @@
 #define FORWARD_SWM_TRAYMSG(hwnd, wNotifEvent, wIconId, x, y, fn) \
 	(void)(fn)((hwnd), SWM_TRAYMSG, MAKEWPARAM((x), (y)), MAKELPARAM((wNotifEvent), (wIconId)))
 
-
 const UINT ClassicTileWnd::WM_TASKBARCREATED = ::RegisterWindowMessageW(L"TaskbarCreated");
 const std::wstring ClassicTileWnd::CLASS_NAME = L"ClassicTileWndClass";
 
@@ -49,13 +48,11 @@ const ClassicTileWnd::MenuId2MenuItem ClassicTileWnd::Default2FileMap = {
     {ID_DEFAULT_UNDOMINIMIZE, File2DefaultStruct(ID_DEFAULT_UNDOMINIMIZE,ID_FILE_UNDOMINIMIZE)}
 };
 
-const ClassicTileWnd::MenuId2MenuItem ClassicTileWnd::File2DefaultMap = []() {
-    MenuId2MenuItem reverse_map;
-    for (const MenuId2MenuItemPair&  f2ds : Default2FileMap) {
-        reverse_map[f2ds.second.uFile] = f2ds.second;
-    }
-    return reverse_map;
-}();
+
+const ClassicTileWnd::MenuId2MenuItem ClassicTileWnd::File2DefaultMap = 
+        ClassicTileWnd::Default2FileMap | 
+                std::views::transform([](const MenuId2MenuItemPair& f2ds) {return std::make_pair(f2ds.second.uFile, f2ds.second); }) | 
+                std::ranges::to<std::map>();
 
 const std::wstring ClassicTileWnd::CURR_MODULE_PATH = []() {
     std::wstring szCurrModulePath;
@@ -377,16 +374,7 @@ void ClassicTileWnd::OnContextMenu(HWND hwnd, HWND, UINT xPos, UINT yPos)
     const static std::wstring SETTINGS_STRING = L"&Settings";
     const static std::wstring DEFAULTS_STRING = L"&Left click does";
 
-    const static std::vector<UINT> DEFAULT_LIST = []() {
-        std::vector<UINT> default_list;
-        for (const MenuId2MenuItemPair& f2ds : Default2FileMap) {
-            default_list.push_back(f2ds.first);
-        }
-        return default_list;
-    }();
-   
-    const static UINT MIN_DEFAULT = *std::min_element(DEFAULT_LIST.cbegin(), DEFAULT_LIST.cend());
-    const static UINT MAX_DEFAULT = *std::max_element(DEFAULT_LIST.cbegin(), DEFAULT_LIST.cend());
+    const static auto MIN_MAX_DEFAULT = std::ranges::minmax_element(Default2FileMap | std::views::keys);
 
     SPHMENU hMenu;
     try {
@@ -394,7 +382,7 @@ void ClassicTileWnd::OnContextMenu(HWND hwnd, HWND, UINT xPos, UINT yPos)
         hMenu.reset(eval_error_nz(::LoadMenuW(m_hInst, MAKEINTRESOURCEW(IDR_MENUPOPUP))));
 
         HMENU hPopupMenu = eval_error_nz(::GetSubMenu(hMenu.get(), 0));
-
+        
         const static UINT SETTING_POS = CTWinUtils::GetSubMenuPosByString(hPopupMenu, SETTINGS_STRING);
 
         HMENU hSettingsMenu = eval_error_nz(::GetSubMenu(hPopupMenu, SETTING_POS ));
@@ -405,8 +393,8 @@ void ClassicTileWnd::OnContextMenu(HWND hwnd, HWND, UINT xPos, UINT yPos)
         const static UINT DEFAULTS_POS = CTWinUtils::GetSubMenuPosByString(hSettingsMenu, DEFAULTS_STRING);
 
         HMENU hDefaultsMenu = eval_error_nz(::GetSubMenu(hSettingsMenu, DEFAULTS_POS));
-        eval_error_nz(::CheckMenuRadioItem(hDefaultsMenu, MIN_DEFAULT, MAX_DEFAULT, FindMenuId2MenuItem(File2DefaultMap, m_nLeftClick).uDefault, MF_BYCOMMAND));
-       
+        eval_error_nz(::CheckMenuRadioItem(hDefaultsMenu, *MIN_MAX_DEFAULT.min, *MIN_MAX_DEFAULT.max, FindMenuId2MenuItem(File2DefaultMap, m_nLeftClick).uDefault, MF_BYCOMMAND));
+
         eval_error_nz(::SetForegroundWindow(hwnd));
         eval_error_nz(::TrackPopupMenu(hPopupMenu, TPM_BOTTOMALIGN, xPos, yPos, 0, hwnd, nullptr));
     }catch (const LoggingException& le) {
@@ -415,9 +403,6 @@ void ClassicTileWnd::OnContextMenu(HWND hwnd, HWND, UINT xPos, UINT yPos)
         log_error("Unhandled exception");
     }
 }
-
-
-
 
 void ClassicTileWnd::TileCascadeHelper(TILE_CASCADE_FUNC pTileCascadeFunc, UINT uHow) const
 {
@@ -437,8 +422,7 @@ void ClassicTileWnd::OnHelp(HWND hwnd) const
             const static std::wstring CHM_FILE_NAME = L"ClassicTileCascadeHelp.chm";
             std::wstring szExePath = CURR_MODULE_PATH;
 
-            eval_error_es( ::PathCchRemoveFileSpec(szExePath.data(), szExePath.size()) );
-            CTWinUtils::RemoveFromNull(szExePath);
+            eval_error_es(::PathCchRemoveFileSpec(sz_wbuf(szExePath), szExePath.size()));
 
             std::wstring szHelpPath;
             CTWinUtils::PathCombineEx(szHelpPath, szExePath, CHM_FILE_NAME);
@@ -839,11 +823,10 @@ void ClassicTileWnd::OpenTextFile(HWND hWnd, const std::wstring& szPath)
 
     try {
         const static std::wstring NOTEPAD_PATH = [] {
-            std::wstring szNotepadPath;
-            szNotepadPath.resize(MAX_PATH);
             eval_error_nz(::SetSearchPathMode(BASE_SEARCH_PATH_ENABLE_SAFE_SEARCHMODE));
-            eval_error_nz(::SearchPathW(nullptr, L"notepad.exe", nullptr, szNotepadPath.size(), szNotepadPath.data(), nullptr));
-            CTWinUtils::RemoveFromNull(szNotepadPath);
+            std::wstring szNotepadPath;
+            sz_wbuf szNotepadPathBuf(szNotepadPath, MAX_PATH);
+            eval_error_nz(::SearchPathW(nullptr, L"notepad.exe", nullptr, szNotepadPathBuf.size(), szNotepadPathBuf, nullptr));
             return szNotepadPath;
         }();
 
@@ -852,15 +835,14 @@ void ClassicTileWnd::OpenTextFile(HWND hWnd, const std::wstring& szPath)
             ::MessageBoxW(hWnd, std::format(FMT_FILE_NOT_FOUND, szPath).c_str(), L"Classic Tile Cascade", MB_OK | MB_ICONINFORMATION);
         }else {
             std::wstring szResult;
-            szResult.resize(MAX_PATH);
-            int nRetVal = reinterpret_cast<int>(::FindExecutableW(szPath.c_str(), NULL, szResult.data()));
-            if (nRetVal > 32) {
-                CTWinUtils::RemoveFromNull(szResult);
-            }else {
+            int nRetVal = reinterpret_cast<int>(::FindExecutableW(szPath.c_str(), NULL, sz_wbuf(szResult, MAX_PATH)));
+            if (nRetVal <= 32) {
                 szResult = NOTEPAD_PATH;
             }
 
-            eval_error_nz(CTWinUtils::CreateProcessHelper(szResult, szPath, nullptr, SW_SHOWMAXIMIZED));
+            std::wstring szPathQuote = szPath;
+            CTWinUtils::PathQuoteSpacesW(szPathQuote);
+            eval_error_nz(CTWinUtils::CreateProcessHelper(szResult, szPathQuote, nullptr, SW_SHOWMAXIMIZED));
         }
     }catch (const LoggingException& le) {
         le.Log();

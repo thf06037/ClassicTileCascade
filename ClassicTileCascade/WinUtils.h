@@ -31,26 +31,11 @@ namespace CTWinUtils
 	template<class T>
 	bool PathCombineEx(T& szDest, const T& szDir, const T& szFile);
 
-	// Given a FILE*, get the fully qualified path of the file 
-	// pointed to by that FILE*
-	bool GetFinalPathNameByFILE(FILE* pFile, std::wstring& szPath);
-
 	// String conversion routines
 	void Wstring2string(std::string& szString, const std::wstring& szWString);
 	void String2wstring(std::wstring& szWString, const std::string& szString);
 	
-	// Given a string or wstring, remove all characters starting with the first
-	// '\0' encountered. Frequently useful for instances where a large buffer has
-	// been allocated using [w]string::resize and then that string's buffer has been
-	// passed to an API function expecting a char*/wchar_t* using string::data.
-	template<class T>
-	void RemoveFromNull(T& szRemove)
-	{
-		size_t nNullChar = szRemove.find(static_cast<T::value_type>(0));
-		if (nNullChar != T::npos) {
-			szRemove.erase(nNullChar);
-		}
-	}
-
 	bool CreateProcessHelper(const std::wstring& szCommand, const std::wstring& szArguments = L"", LPDWORD lpdwProcId = nullptr, int nShowWindow = -1);
+
+	bool PathQuoteSpacesW(std::wstring& szPath);
 }

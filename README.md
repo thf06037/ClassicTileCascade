@@ -195,6 +195,10 @@ ClassicTileCascade.log</p>
 <p>Enabling logging is only necessary if you are having issues with
 Classic Tile &amp; Cascade</p></td>
 </tr>
+<tr class="odd">
+<td>Open Log File</td>
+<td>Open the log file</td>
+</tr>
 </tbody>
 </table>
 

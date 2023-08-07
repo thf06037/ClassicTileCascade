@@ -99,3 +99,88 @@ struct CCoInitialize
         ::CoUninitialize();
     }
 };
+
+
+template<class T>
+class basic_sz_buf
+{
+public:
+    using value_type = T::value_type;
+    using size_type = T::size_type;
+
+    basic_sz_buf() = delete;
+    basic_sz_buf(const basic_sz_buf&) = default;
+    basic_sz_buf(basic_sz_buf&&) noexcept = default;
+    basic_sz_buf& operator=(const basic_sz_buf&) = default;
+    basic_sz_buf& operator=(basic_sz_buf&&) noexcept = default;
+
+    basic_sz_buf(T& sz, size_type nSize = T::npos, bool bRemoveNulls = true)
+        : m_sz(sz), m_bRemoveNulls(bRemoveNulls)
+    {
+        if (nSize != T::npos) {
+            m_sz.resize(nSize);
+        }
+    }
+
+
+    virtual ~basic_sz_buf()
+    {
+        if (m_bRemoveNulls) {
+            remove_from_null();
+        }
+    }
+
+
+    virtual value_type* data()
+    {
+        return m_sz.data();
+    }
+
+    virtual operator value_type*()
+    {
+        return data();
+    }
+
+    virtual T& get_string()
+    {
+        return m_sz;
+    }
+
+    virtual operator T& ()
+    {
+        return get_string();
+    }
+
+    virtual size_type remove_from_null()
+    {
+        size_type nNullChar = m_sz.find(static_cast<value_type>(0));
+        if (nNullChar != T::npos) {
+            m_sz.erase(nNullChar);
+        }
+        return nNullChar;
+    }
+
+
+    virtual bool get_remove_null() const
+    {
+        return m_bRemoveNulls;
+    }
+
+    virtual void set_remove_null(bool bRemoveNulls)
+    {
+        m_bRemoveNulls = bRemoveNulls;
+    }
+
+    virtual size_type size() const
+    {
+        return m_sz.size();
+    }
+
+protected:
+    T& m_sz;
+    bool m_bRemoveNulls;
+
+};
+
+using sz_buf = basic_sz_buf<std::string>;
+using sz_wbuf = basic_sz_buf<std::wstring>;

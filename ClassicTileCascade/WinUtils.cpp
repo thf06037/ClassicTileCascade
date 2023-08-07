@@ -76,7 +76,7 @@ bool CTWinUtils::CheckMenuItem(HMENU hMenu, UINT uID, bool bChecked)
     mii.cbSize = sizeof(mii);
     mii.fMask = MIIM_STATE;
     mii.fState = bChecked ? MFS_CHECKED : MFS_UNCHECKED;
-    return (::SetMenuItemInfoW(hMenu, static_cast<UINT>(uID), FALSE, &mii) == TRUE);
+    return (::SetMenuItemInfoW(hMenu, uID, FALSE, &mii) == TRUE);
 }
 
 bool CTWinUtils::ShellExecInExplorerProcess(const std::wstring& szFile, const std::wstring& szArgs, LPDWORD pDWProcID)
@@ -93,7 +93,12 @@ bool CTWinUtils::ShellExecInExplorerProcess(const std::wstring& szFile, const st
             *pDWProcID = 0;
         }
 
-        std::wstring szCommandLine = L"\"" + szFile + L"\"" + ((szArgs.size() > 0) ? (L" " + szArgs) : L"");
+        std::wstring szCommandLine = szFile;
+        CTWinUtils::PathQuoteSpacesW(szCommandLine);
+        if (!szArgs.empty()) {
+            szCommandLine.append(L" ");
+            szCommandLine.append(szArgs);
+        }
 
         if (IsUserAnAdmin()) {
             SPHANDLE_EX hProcessToken;
@@ -150,28 +155,23 @@ bool CTWinUtils::ShellExecInExplorerProcess(const std::wstring& szFile, const st
 
 DWORD CTWinUtils::GetCurrModuleFileName(std::wstring& szCurrModFileName)
 {
-    DWORD dwRetVal = 0;
     szCurrModFileName.clear();
-    szCurrModFileName.resize(MAX_PATH);
-    dwRetVal = ::GetModuleFileNameW(nullptr, szCurrModFileName.data(), static_cast<DWORD>(szCurrModFileName.size()));
-    RemoveFromNull(szCurrModFileName);
-    return dwRetVal;
+    sz_wbuf szCurrModFileNameBuf(szCurrModFileName, MAX_PATH);
+    return ::GetModuleFileNameW(nullptr, szCurrModFileNameBuf, static_cast<DWORD>(szCurrModFileNameBuf.size()));
 }
 
 void CTWinUtils::Wstring2string(std::string& szString, const std::wstring& szWString)
 {
     szString.clear();
-    szString.resize(szWString.size() + 1);
-    ::wcstombs_s(nullptr, szString.data(), szString.size(), szWString.c_str(), szString.size() - 1);
-    RemoveFromNull(szString);
+    sz_buf szStringBuf(szString, szWString.size() + 1);
+    ::wcstombs_s(nullptr, szStringBuf, szStringBuf.size(), szWString.c_str(), szStringBuf.size() - 1);
 }
 
 void CTWinUtils::String2wstring(std::wstring& szWString, const std::string& szString)
 {
     szWString.clear();
-    szWString.resize(szString.size() + 1);
-    ::mbstowcs_s(nullptr, szWString.data(), szWString.size(), szString.c_str(), static_cast<size_t>(szWString.size() - 1));
-    RemoveFromNull(szWString);
+    sz_wbuf szWStringBuf(szWString, szString.size() + 1);
+    ::mbstowcs_s(nullptr, szWStringBuf, szWStringBuf.size(), szString.c_str(), static_cast<size_t>(szWStringBuf.size() - 1));
 }
 
 bool CTWinUtils::GetMenuStringSubMenu(HMENU hMenu, UINT uItem, bool bByPosition, std::wstring& szMenu, HMENU* phSubMenu)
@@ -190,16 +190,15 @@ bool CTWinUtils::GetMenuStringSubMenu(HMENU hMenu, UINT uItem, bool bByPosition,
         && (mii.fType == MFT_STRING)
         && (mii.cch > 0))
     {
-        szMenu.resize(mii.cch + 1);
-        mii.dwTypeData = szMenu.data();
-        mii.cch = static_cast<UINT>(szMenu.size());
+        sz_wbuf szMenuBuf(szMenu, mii.cch + 1);
+        mii.dwTypeData = szMenuBuf;
+        mii.cch = static_cast<UINT>(szMenuBuf.size());
         mii.fMask = MIIM_STRING;
         if (phSubMenu) {
             mii.fMask |= MIIM_SUBMENU;
         }
 
         if (::GetMenuItemInfoW(hMenu, uItem, bByPosition ? TRUE : FALSE, &mii)) {
-            CTWinUtils::RemoveFromNull(szMenu);
             if (phSubMenu) {
                 *phSubMenu = mii.hSubMenu;
             }
@@ -222,15 +221,8 @@ LPWSTR MyPathCombine(LPWSTR pszDest, LPCWSTR pszDir, LPCWSTR pszFile)
 template<class T>
 bool CTWinUtils::PathCombineEx(T& szDest, const T& szDir, const T& szFile)
 {
-    bool bRetVal = false;
     szDest.clear();
-    szDest.resize(MAX_PATH);
-    bRetVal = (MyPathCombine(szDest.data(), szDir.c_str(), szFile.c_str()) != nullptr);
-
-    if (bRetVal) {
-        RemoveFromNull(szDest);
-    }
-    return bRetVal;
+    return (MyPathCombine(basic_sz_buf<T>(szDest, MAX_PATH), szDir.c_str(), szFile.c_str()) != nullptr);
 }
 
 template
@@ -238,31 +230,6 @@ bool CTWinUtils::PathCombineEx(std::string& szDest, const std::string& szDir, co
 
 template
 bool CTWinUtils::PathCombineEx(std::wstring& szDest, const std::wstring& szDir, const std::wstring& szFile);
-
-bool CTWinUtils::GetFinalPathNameByFILE(FILE* pFile, std::wstring& szPath)
-{
-    bool bRetVal = false;
-
-    szPath.clear();
-
-    int nFN = _fileno(pFile);
-    if (nFN >= 0) {
-        HANDLE hFile = reinterpret_cast<HANDLE>(_get_osfhandle(nFN));
-        if (hFile != INVALID_HANDLE_VALUE) {
-            szPath.resize(MAX_PATH);
-            if (::GetFinalPathNameByHandleW(hFile, szPath.data(), szPath.size(), 0)) {
-                RemoveFromNull(szPath);
-                if (SUCCEEDED(::PathCchStripPrefix(szPath.data(), szPath.size()))) {
-                    RemoveFromNull(szPath);
-                    bRetVal = true;
-                }
-            }
-        }
-    }
-    return bRetVal;
-}
-
-
 
 bool CTWinUtils::CreateProcessHelper(const std::wstring& szCommand, const std::wstring& szArguments, LPDWORD lpdwProcId, int nShowWindow)
 {
@@ -280,7 +247,8 @@ bool CTWinUtils::CreateProcessHelper(const std::wstring& szCommand, const std::w
 
     PROCESS_INFORMATION pi = { 0 };
     
-    std::wstring szCommandLine = L"\"" + szCommand + L"\"";
+    std::wstring szCommandLine = szCommand;
+    CTWinUtils::PathQuoteSpacesW(szCommandLine);
     if (!szArguments.empty()) {
         szCommandLine += L" ";
         szCommandLine += szArguments;
@@ -296,4 +264,9 @@ bool CTWinUtils::CreateProcessHelper(const std::wstring& szCommand, const std::w
         }
     }
     return bRetVal;
+}
+
+bool CTWinUtils::PathQuoteSpacesW(std::wstring& szPath)
+{
+    return (::PathQuoteSpacesW(sz_wbuf(szPath, MAX_PATH)) == TRUE);
 }

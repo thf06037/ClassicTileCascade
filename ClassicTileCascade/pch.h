@@ -41,4 +41,5 @@
 #include <memory>
 #include <algorithm>
 #include <io.h>
+#include <ranges>
 #endif //PCH_H
