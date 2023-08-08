@@ -283,6 +283,6 @@
     </BuildDependsOn>
   </PropertyGroup>
   <Target Name="CustomAfterBuild">
-    <Exec Command="Powershell.exe -ExecutionPolicy Bypass -File  &quot;$(HelpDir)BuildHelp.ps1&quot; -HelpDir &quot;$(HelpDir.TrimEnd('\'))&quot; -TargetDir &quot;$(TargetDir.TrimEnd('\'))&quot; $(RebuildSwitch) -ReadMeDir &quot;$(SolutionDir.TrimEnd('\'))&quot;" />
+    <Exec Command="Powershell.exe -ExecutionPolicy Bypass -File  &quot;$(HelpDir)BuildHelp.ps1&quot; -HelpDir &quot;$(HelpDir.TrimEnd('\'))&quot; -TargetDir &quot;$(TargetDir.TrimEnd('\'))&quot; $(RebuildSwitch)" />
   </Target>
 </Project>

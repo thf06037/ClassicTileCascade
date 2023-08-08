@@ -4,22 +4,18 @@ Classic Tile & Cascade was created to restore the following actions to
 the taskbar in Windows 11:
 
 - Cascade windows
-
 - Show the desktop
-
 - Show windows side by side
-
 - Show windows stacked
-
 - Undo Minimize
 
 These actions were available in Windows 10 and earlier versions of
 Windows by right clicking any blank area on the toolbar and selecting
 them from a context menu. This was removed in Windows 11 and users were
-encouraged to use the alternative “Aero Snap” tiling features.
+encouraged to use the alternative "Aero Snap" tiling features.
 
-Windows 10 also introduced a behavior (most users would call it a “bug”)
-when choosing “Show windows side by side“ or “Show windows stacked” from
+Windows 10 also introduced a behavior (most users would call it a "bug")
+when choosing "Show windows side by side" or "Show windows stacked" from
 the taskbar context menu whereby a blank space was often left on the
 desktop. E.g., if there are two non-minimized windows, stacking those 2
 Windows would only take up 2/3 of the desktop, with a blank area left at
@@ -30,8 +26,8 @@ the windows to tile or cascade which avoids this behavior. E.g., if
 there are two non-minimized windows, stacking those 2 Windows would
 result in each window covering ½ of the desktop. The usually buggy
 default cascade/tile behavior carried over from Windows 10 can be
-restored using the Settings menu should you prefer it or have any issues with the
-customized algorithm.
+restored using the Settings menu.
+
 
 ## Dependencies & Installation (End User)
 Classic Tile & Cascade works on Windows 10 and Windows 11. 
@@ -64,67 +60,69 @@ Settings \> Start Automatically)
 Classic Tile & Cascade can also be started from its shortcut on the
 Start menu (show all apps)
 
+
 ## Usage
 **Basic Operation**
 
-Classic Tile & Cascade runs as a Notification Icon in your “system
-tray.”
+Classic Tile & Cascade runs as a Notification Icon in your system tray.
 
-![SysTray Icon](ClassicTileCascadeHelp/image001.png)
+<img src="ClassicTileCascadeHelp\image001.png" width="79" height="58" />
 
-![SysTray Icon](ClassicTileCascadeHelp/menu.png)
+<img src="ClassicTileCascadeHelp\menu.png" width="544" height="166" />
 
 You can do the following with this notification icon
 
-<table>
+<table data-border="1" data-cellspacing="0" data-cellpadding="0">
 <colgroup>
-<col style="width: 24%" />
-<col style="width: 75%" />
+<col style="width: 50%" />
+<col style="width: 50%" />
 </colgroup>
-<thead>
-<tr class="header">
-<th><strong>Operation</strong></th>
-<th><strong>Result</strong></th>
-</tr>
-</thead>
 <tbody>
 <tr class="odd">
-<td>Left-click on icon</td>
-<td><p>Invokes the default action. The default action can be chosen using “Settings
-&gt; Left click does” from the context menu. Hovering the mouse over the
-icon shows you the current default action.</p>
+<td width="156" data-valign="top"><p><strong>Operation</strong></p></td>
+<td width="468" data-valign="top"><p><strong>Result</strong></p></td>
+</tr>
+<tr class="even">
+<td width="156" data-valign="top"><p>Left-click on icon</p></td>
+<td width="468" data-valign="top"><p>Invokes the default action. These
+can be chosen using <a href="Settings%20Menu.htm">Settings</a> &gt; Left
+click does from the context menu. Hovering the mouse over the icon shows
+you the current default action.</p>
 <p>The possible default actions are:</p>
 <ul>
-<li><p>Cascade windows</p></li>
-<li><p>Show the desktop</p></li>
-<li><p>Show windows side by side</p></li>
-<li><p>Show windows stacked</p></li>
-<li><p>Undo Minimize</p></li>
+<li>Cascade windows</li>
+<li>Show the desktop</li>
+<li>Show windows side by side</li>
+<li>Show windows stacked</li>
+<li>Undo Minimize</li>
+</ul></td>
+</tr>
+<tr class="odd">
+<td width="156" data-valign="top"><p>Right-click on icon</p></td>
+<td width="468" data-valign="top"><p>Displays the context menu. From
+here you can:</p>
+<ul>
+<li>Choose a cascade/tile action. Choices are:</li>
+<li><ul>
+<li>Cascade windows</li>
+<li>Show the desktop</li>
+<li>Show windows side by side</li>
+<li>Show windows stacked</li>
+<li>Undo Minimize</li>
+</ul></li>
+<li>Open the <a href="Settings%20Menu.htm">Settings</a> menu</li>
+<li>Launch this Help</li>
+<li>Exit the application and remove the notification icon</li>
 </ul></td>
 </tr>
 <tr class="even">
-<td>Right-click on icon</td>
-<td><p>Displays the context menu. From here you can:</p>
-<ul>
-<li><p>Choose a cascade/tile action. Choices are:</p>
-<ul>
-<li><p>Cascade windows</p></li>
-<li><p>Show the desktop</p></li>
-<li><p>Show windows side by side</p></li>
-<li><p>Show windows stacked</p></li>
-<li><p>Undo Minimize</p></li>
-</ul></li>
-<li><p>Open the Settings menu</p></li>
-<li><p>Open online help</p></li>
-<li><p>Exit the application and remove the notification icon</p></li>
-</ul></td>
-</tr>
-<tr class="odd">
-<td>Hover mouse over icon</td>
-<td>Shows you the current default action.</td>
+<td width="156" data-valign="top"><p>Hover mouse over icon</p></td>
+<td width="468" data-valign="top"><p>Shows you the current default
+action.</p></td>
 </tr>
 </tbody>
 </table>
+
 
 **Settings Menu**
 
@@ -133,107 +131,105 @@ Settings) controls Classic Tile & Cascade’s behavior.
 
 The following settings are available:
 
-<table>
+<table data-border="1" data-cellspacing="0" data-cellpadding="0">
 <colgroup>
-<col style="width: 24%" />
-<col style="width: 75%" />
+<col style="width: 50%" />
+<col style="width: 50%" />
 </colgroup>
-<thead>
-<tr class="header">
-<th><strong>Setting</strong></th>
-<th><strong>Description</strong></th>
-</tr>
-</thead>
 <tbody>
 <tr class="odd">
-<td>Start automatically</td>
-<td><ul>
-<li><p><strong>Checked -</strong> Classic Tile &amp; Cascade will start
-automatically at user login</p></li>
-<li><p><strong>Unchecked -</strong> Classic Tile &amp; Cascade will not
-start automatically at user login</p></li>
-</ul></td>
+<td width="156" data-valign="top"><p><strong>Setting</strong></p></td>
+<td width="468"
+data-valign="top"><p><strong>Description</strong></p></td>
 </tr>
 <tr class="even">
-<td>Left click does</td>
-<td><p>Shows a submenu that lets you choose the left click default
-action.</p>
-<p>The possible default actions are:</p>
-<ul>
-<li><p>Cascade windows</p></li>
-<li><p>Show the desktop</p></li>
-<li><p>Show windows side by side</p></li>
-<li><p>Show windows stacked</p></li>
-<li><p>Undo Minimize</p></li>
-</ul></td>
+<td width="156" data-valign="top"><p>Start automatically</p></td>
+<td width="468" data-valign="top"><ul>
+<li><strong>Checked -</strong>Classic Tile &amp; Cascade will start
+automatically at user login <strong></strong></li>
+<li><strong>Unchecked -</strong>Classic Tile &amp; Cascade will not
+start automatically at user login <strong></strong></li>
+</ul>
+<p><strong></strong></p></td>
 </tr>
 <tr class="odd">
-<td>Default Windows Tile/Cascade</td>
-<td><ul>
-<li><p><strong>Checked –</strong> the default windows tile and cascade
-functions are used</p></li>
-<li><p><strong>Unchecked -</strong> Classic Tile &amp; Cascade uses an
-internal algorithm to determine which windows to tile or cascade. This
-algorithm approximates the list of non-minimized windows that would show
-up in the ALT-Tab switcher menu.</p></li>
-</ul>
-<p>It’s recommended to <b>uncheck</b> this setting unless you are having
-problems with the internal algorithm behavior. Please see the
-Troubleshooting section for some scenarios where you might wish to check
-or uncheck this setting.</p></td>
+<td width="156" data-valign="top"><p>Left click does</p></td>
+<td width="468" data-valign="top"><p>Shows a submenu that lets you
+choose the left click default action.</p>
+<p>The possible default actions are:</p>
+<ul>
+<li>Cascade windows</li>
+<li>Show the desktop</li>
+<li>Show windows side by side</li>
+<li>Show windows stacked</li>
+<li>Undo Minimize</li>
+</ul></td>
 </tr>
 <tr class="even">
-<td>Logging</td>
-<td><ul>
-<li><p><strong>Checked –</strong> log errors and other information to a
-file log</p></li>
-<li><p><strong>Unchecked –</strong> do not log errors and other
-information to a file log</p></li>
+<td width="156" data-valign="top"><p>Default Windows
+Tile/Cascade</p></td>
+<td width="468" data-valign="top"><ul>
+<li><strong>Checked -</strong> the default windows tile and cascade
+functions are used <strong></strong></li>
+<li><strong>Unchecked -</strong> Classic Tile &amp; Cascade uses an
+internal algorithm to determine which windows to tile or cascade. This
+algorithm approximates the list of non-minimized windows that would show
+up in the ALT-Tab switcher menu. <strong></strong></li>
 </ul>
-<p>The log can be found at this location on your PC: %LOCALAPPDATA%\
-ClassicTileCascade.log</p>
+<p><strong></strong></p>
+<p>It’s recommended to uncheck this setting unless you are having
+problems with the internal algorithm behavior. Please see the <a
+href="Troubleshooting.htm">Troubleshooting</a> section for some
+scenarios where you might wish to check or uncheck this
+setting.</p></td>
+</tr>
+<tr class="odd">
+<td width="156" data-valign="top"><p>Logging</p></td>
+<td width="468" data-valign="top"><ul>
+<li><strong>Checked -</strong> log errors and other information to a
+file log</li>
+<li><strong>Unchecked -</strong> do not log errors and other information
+to a file log</li>
+</ul>
+<p>The log can be found at this location on your PC:
+%LOCALAPPDATA%\ClassicTileCascade.log</p>
 <p>Enabling logging is only necessary if you are having issues with
 Classic Tile &amp; Cascade</p></td>
 </tr>
-<tr class="odd">
-<td>Open Log File</td>
-<td>Open the log file</td>
+<tr class="even">
+<td width="156" data-valign="top"><p>Open Log File</p></td>
+<td width="468" data-valign="top"><p>Open the log file.</p></td>
 </tr>
 </tbody>
 </table>
 
-## Troubleshooting/FAQ
+
+## Troubleshooting
 
 **I don’t see Classic Tile & Cascade in my system tray**
 
-Ensure that you have switched Classic Tile & Cascade “on” under the
-“Other system tray icons” Windows settings.
+Ensure that you have switched Classic Tile & Cascade "on" under the
+"Other system tray icons" Windows settings.
 
 To access this setting (Windows 11):
 
-1.  Right click on the taskbar and choose “Taskbar settings”
+1\. Right click on the taskbar and choose "Taskbar settings"
 
-2.  Expand the “Other system tray icons” section on the settings page
+2\. Expand the "Other system tray icons" section on the settings page
 
-3.  Find “ClassicTileCascade” and switch it “on”
+3\. Find "ClassicTileCascade.exe" and switch it "on"
 
 **Tiling the windows leaves a blank space on the desktop**
 
-Try unchecking “Default Windows Tile/Cascade” in settings: Right-click
-on icon \> Settings \> Default Windows Tile/Cascade.
+Try unchecking "Default Windows Tile/Cascade" in settings: Right-click
+on icon \> [Settings](Settings%20Menu.htm) \> Default Windows
+Tile/Cascade.
 
 **Some windows aren’t tiled when I tile the windows**
 
-Try checking “Default Windows Tile/Cascade” in settings: Right-click
-on icon \> Settings \> Default Windows Tile/Cascade.
+Try checking "Default Windows Tile/Cascade" in settings: Right-click on
+icon \> [Settings](Settings%20Menu.htm) \> Default Windows Tile/Cascade.
 
-**Why do I get a warning from my antivirus and/or Windows system when I try to install Classic Tile & Cascade?**
-
-The only way to avoid this warning would be for me to purchase a code signing security certificate and using it to sign the 
-executables for the project. This is beyond my budget for this project (both in terms of time and money). 
-There is no malicious code in this application and the full source code for this project is 
-[available online](https://github.com/thf06037/ClassicTileCascade). If you are concerned about the security of this app, 
-please definitely run Setup.exe and the MSI of the installer through an antivirus scan before executing Setup.exe.
 
 ## Getting Help
 If you have questions, concerns, bug reports, etc, please file an issue in [this repository](https://github.com/thf06037/ClassicTileCascade)'s Issue Tracker.
@@ -281,6 +277,8 @@ CD to the ClassicTileCascadeHelp directory and run the following:
 
 `hhc ClassicTileCascadeHelp.hhp`
 
+A post build step for the project requires pandoc. You can download pandoc [here](https://pandoc.org/installing.html).
+
 ## About Me And Why I Created This Project
 **About me**
 
@@ -318,8 +316,6 @@ than anything else on the project. I have barely scratched the surface.
     iv. Learn about the non-technical aspects of Open Source projects, including licensing, collaboration,
 code signing, etc. **My observation**: There are a tremendous amount of good resources online for this, but many of them
 are geared towards organizations rather than indivdual coders. 
-
-    
 ## License
 
 Classic Tile & Cascade - Copyright (C) 2023 thf
@@ -328,11 +324,12 @@ Classic Tile & Cascade is free software with open source.
 
 The code is under the MIT license
 
-Read file [License.txt](LICENSE.txt) for full information about license.
+Read file License.txt for full information about license.
 
 Note: You can use Classic Tile & Cascade on any computer, including a
 computer in a commercial organization. You don't need to register or pay
 for Classic Tile & Cascade.
+
 
 ## Credits and references
 Classic Tile & Cascade uses the [log.c](https://github.com/rxi/log.c) open source library:
