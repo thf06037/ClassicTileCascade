@@ -68,18 +68,22 @@ fine in Windows 7, but was broken by Windows 10 (see above).
 3. I have little or no time in my current IT role for hands on coding. But I miss coding so badly! In my 
 coding heyday (ca. 1996-2006), I developed mostly in Win32 C++ (MFC, COM/DCOM, ATL), Visual Basic 6, and 
 Java. In this project I wanted to:
+
     i. Learn more about how C++ has developed and change in the last 15 years. Particularly wanted to 
 get exposed to the language changes that C++ 11 brought about. **My observation**: I was really blown away
 by the scope of change to C++ in the last 10+ years!! So much so that I found it really hard to 
 leverage all of the new functionality in a "hand's on" project. This project inspired me
 to order Scott Meyer's "Effective Modern C++" book to get a deeper perspective.
+
     ii. See whether Win32 programming in C/C++ had changed much in the last 15 years. **My observation**: Very 
 little change. I was able to pick things up basically where I left them those many years ago. Based on what is 
 available online, most developers have understandably moved to C#/WinForms/WPF for this type of project.
+
     iii. Learn about modern source code control using Git and Github. **My observation**: Git is easy to get 
 started with (especially with Visual Studio integration), but an absolute beast to master. I probably spent
 more time figuring out how to get certain things done in Git 
 than anything else on the project. I have barely scratched the surface.
+
     iv. Learn about the non-technical aspects of Open Source projects, including licensing, collaboration,
 code signing, etc. **My observation**: There are a tremendous amount of good resources online for this, but many of them
 are geared towards organizations rather than indivdual coders. 

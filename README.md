@@ -24,7 +24,7 @@ the bottom of the desktop.
 By default, Classic Tile & Cascade uses a customized algorithm to choose
 the windows to tile or cascade which avoids this behavior. E.g., if
 there are two non-minimized windows, stacking those 2 Windows would
-result in each window covering ½ of the desktop. The usually buggy
+result in each window covering 1/2 of the desktop. The usually buggy
 default cascade/tile behavior carried over from Windows 10 can be
 restored using the Settings menu.
 
@@ -85,9 +85,9 @@ You can do the following with this notification icon
 <tr class="even">
 <td width="156" data-valign="top"><p>Left-click on icon</p></td>
 <td width="468" data-valign="top"><p>Invokes the default action. These
-can be chosen using <a href="Settings%20Menu.htm">Settings</a> &gt; Left
-click does from the context menu. Hovering the mouse over the icon shows
-you the current default action.</p>
+can be chosen using Settings &gt; Left click does from the context menu.
+Hovering the mouse over the icon shows you the current default
+action.</p>
 <p>The possible default actions are:</p>
 <ul>
 <li>Cascade windows</li>
@@ -110,7 +110,7 @@ here you can:</p>
 <li>Show windows stacked</li>
 <li>Undo Minimize</li>
 </ul></li>
-<li>Open the <a href="Settings%20Menu.htm">Settings</a> menu</li>
+<li>Open the Settings menu</li>
 <li>Launch this Help</li>
 <li>Exit the application and remove the notification icon</li>
 </ul></td>
@@ -127,7 +127,7 @@ action.</p></td>
 **Settings Menu**
 
 The Settings menu on the right-click context menu (Right-click \>
-Settings) controls Classic Tile & Cascade’s behavior.
+Settings) controls Classic Tile & Cascade's behavior.
 
 The following settings are available:
 
@@ -177,11 +177,10 @@ algorithm approximates the list of non-minimized windows that would show
 up in the ALT-Tab switcher menu. <strong></strong></li>
 </ul>
 <p><strong></strong></p>
-<p>It’s recommended to uncheck this setting unless you are having
-problems with the internal algorithm behavior. Please see the <a
-href="Troubleshooting.htm">Troubleshooting</a> section for some
-scenarios where you might wish to check or uncheck this
-setting.</p></td>
+<p>It's recommended to uncheck this setting unless you are having
+problems with the internal algorithm behavior. Please see the
+Troubleshooting section for some scenarios where you might wish to check
+or uncheck this setting.</p></td>
 </tr>
 <tr class="odd">
 <td width="156" data-valign="top"><p>Logging</p></td>
@@ -206,7 +205,7 @@ Classic Tile &amp; Cascade</p></td>
 
 ## Troubleshooting
 
-**I don’t see Classic Tile & Cascade in my system tray**
+**I don't see Classic Tile & Cascade in my system tray**
 
 Ensure that you have switched Classic Tile & Cascade "on" under the
 "Other system tray icons" Windows settings.
@@ -222,13 +221,12 @@ To access this setting (Windows 11):
 **Tiling the windows leaves a blank space on the desktop**
 
 Try unchecking "Default Windows Tile/Cascade" in settings: Right-click
-on icon \> [Settings](Settings%20Menu.htm) \> Default Windows
-Tile/Cascade.
+on icon \> Settings \> Default Windows Tile/Cascade.
 
-**Some windows aren’t tiled when I tile the windows**
+**Some windows aren't tiled when I tile the windows**
 
 Try checking "Default Windows Tile/Cascade" in settings: Right-click on
-icon \> [Settings](Settings%20Menu.htm) \> Default Windows Tile/Cascade.
+icon \> Settings \> Default Windows Tile/Cascade.
 
 
 ## Getting Help
@@ -301,18 +299,22 @@ fine in Windows 7, but was broken by Windows 10 (see above).
 3. I have little or no time in my current IT role for hands on coding. But I miss coding so badly! In my 
 coding heyday (ca. 1996-2006), I developed mostly in Win32 C++ (MFC, COM/DCOM, ATL), Visual Basic 6, and 
 Java. In this project I wanted to:
+
     i. Learn more about how C++ has developed and change in the last 15 years. Particularly wanted to 
 get exposed to the language changes that C++ 11 brought about. **My observation**: I was really blown away
 by the scope of change to C++ in the last 10+ years!! So much so that I found it really hard to 
 leverage all of the new functionality in a "hand's on" project. This project inspired me
 to order Scott Meyer's "Effective Modern C++" book to get a deeper perspective.
+
     ii. See whether Win32 programming in C/C++ had changed much in the last 15 years. **My observation**: Very 
 little change. I was able to pick things up basically where I left them those many years ago. Based on what is 
 available online, most developers have understandably moved to C#/WinForms/WPF for this type of project.
+
     iii. Learn about modern source code control using Git and Github. **My observation**: Git is easy to get 
 started with (especially with Visual Studio integration), but an absolute beast to master. I probably spent
 more time figuring out how to get certain things done in Git 
 than anything else on the project. I have barely scratched the surface.
+
     iv. Learn about the non-technical aspects of Open Source projects, including licensing, collaboration,
 code signing, etc. **My observation**: There are a tremendous amount of good resources online for this, but many of them
 are geared towards organizations rather than indivdual coders. 

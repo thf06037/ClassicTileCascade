@@ -52,7 +52,7 @@ if($Rebuild -or ($LatestDependency -gt $ChmFileTime)){
 
  if($Rebuild -or ($LatestReadmeDependency -gt $InterimReadmeFileTime)){
     "Staring README.md build"
-    Remove-Item -path "$InterimReadMeDir\*"
+    Remove-Item -path "$InterimReadMeDir\*" -Include *.md
     Get-ChildItem -Path "$HelpDir\*" -Include *.htm | foreach {
         [System.IO.FileInfo] $item = Get-Item $_
         [string] $MDName = Join-Path -path $InterimReadMeDir -ChildPath "$($_.BaseName).md"
