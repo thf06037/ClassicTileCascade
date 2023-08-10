@@ -8,6 +8,86 @@
 
 Set-StrictMode -Version Latest
 
+Set-Variable -Name MAX_PATH -Value 260 -Option Constant
+
+
+[System.Type] $shlwapi = Add-Type -name "shlwapi" -Namespace Win32Functions -PassThru -MemberDefinition @'
+    [DllImport("shlwapi.dll", CharSet = CharSet.Unicode)]
+    public static extern bool PathQuoteSpaces(Char[] lpsz);
+'@
+
+function Get-PathQuoteSpace
+{
+    [OutputType([string])]
+    Param(
+        [Parameter(Mandatory=$true, ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True, Position=0)]
+        [String] $Path
+    )
+
+    process
+    {
+        [Char[]] $sbPath = [Char[]]::new($script:MAX_PATH)
+        $Path.CopyTo(0, $sbPath, 0, $Path.Length)
+        $shlwapi::PathQuoteSpaces($sbPath) | Out-Null
+
+        [int] $zInd = [array]::IndexOf($sbPath, [char]0)
+        if($zInd -lt 0){
+            [string]::new($sbPath)
+        }else{
+            [string]::new($sbPath, 0, $zInd)
+        }
+    }
+}
+
+function Get-LatestWriteTime
+{
+    [OutputType([Nullable[datetime]])]
+    Param(
+        [Parameter(Mandatory=$true, ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True, Position=0)]
+        [string] $Path,
+
+        [Parameter(Mandatory=$false, ValueFromPipelineByPropertyName=$True, Position=1)]
+        [string[]] $Include
+    )
+
+    process
+    {
+        Get-ChildItem @PSBoundParameters | Measure-Object -Property LastWriteTime -Maximum | Select-Object -ExpandProperty Maximum
+    }
+
+}
+
+function Get-LastWriteTime
+{
+    [OutputType([Nullable[datetime]])]
+    Param(
+        [Parameter(Mandatory=$true, ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True, Position=0)]
+        [string] $Path,
+
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$True, Position=1)]
+        [string] $Filter
+    )
+
+    process
+    {
+        Get-ChildItem @PSBoundParameters -File | Select-Object -ExpandProperty LastWriteTime
+    }
+}
+
+function Join-PathAndQuote
+{
+    [OutputType([string])]
+    Param(
+        [Parameter(Mandatory=$true, ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True, Position=0)]
+        [string] $Path,
+
+        [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$True, Position=1)]
+        [string] $ChildPath
+    )
+
+    Join-Path @PSBoundParameters | Get-PathQuoteSpace
+}
+
 Set-Variable -Name HH_CMD -Value "C:\Program Files (x86)\HTML Help Workshop\hhc.exe" -Option Constant 
 Set-Variable -Name CHM_FILE -Value "ClassicTileCascadeHelp.chm" -Option Constant
 Set-Variable -Name HHP_FILE -Value "ClassicTileCascadeHelp.hhp" -Option Constant
@@ -16,19 +96,18 @@ Set-Variable -Name MD_INTERIM_DIR -Value "MD_Files" -Option Constant
 Set-Variable -Name LUA_FILTER -Value "image-filter.lua" -Option Constant
 
 [string] $ChmPath = Join-Path -Path "$HelpDir" -ChildPath $script:CHM_FILE
-[string] $HhpPath = Join-Path -Path "$HelpDir" -ChildPath $script:HHP_FILE
+[string] $HhpPath = Join-PathAndQuote -Path "$HelpDir" -ChildPath $script:HHP_FILE
 [string] $TargetChmPath = Join-Path -Path "$TargetDir" -ChildPath $script:CHM_FILE
 
 
-[Nullable[datetime]] $LatestDependency =  Get-ChildItem -Path "$HelpDir\*" -Include *.htm, *.hhc, *.hhp, *.png | Measure-Object -Property LastWriteTime -Maximum | foreach {$_.Maximum}
-[Nullable[datetime]] $ChmFileTime = Get-ChildItem -Path $HelpDir -File $script:CHM_FILE  | foreach {$_.LastWriteTime}
-[Nullable[datetime]] $TargetChmFileTime = Get-ChildItem -Path $TargetDir -File $script:CHM_FILE  | foreach {$_.LastWriteTime}
-
+[Nullable[datetime]] $LatestDependency =  Get-LatestWriteTime -Path "$HelpDir\*" -Include *.htm, *.hhc, *.hhp, *.png
+[Nullable[datetime]] $ChmFileTime = Get-LastWriteTime -Path $HelpDir -Filter $script:CHM_FILE  
+[Nullable[datetime]] $TargetChmFileTime = Get-LastWriteTime -Path $TargetDir -Filter  $script:CHM_FILE  
 
 if($Rebuild -or ($LatestDependency -gt $ChmFileTime)){
     "Starting CHM build"
     "Compiling HTML Help Project '$HhpPath'"
-    & $script:HH_CMD "`"$HhpPath`""
+    & $script:HH_CMD $HhpPath
     "Copying '$ChmPath' to '$TargetChmPath'"
     Copy-Item -path $ChmPath -Destination $TargetChmPath 
  }elseif($ChmFileTime -gt $TargetChmFileTime){
@@ -43,21 +122,21 @@ if($Rebuild -or ($LatestDependency -gt $ChmFileTime)){
 [string] $TargetReadMePath = Join-Path -Path "$ReadMeDir" -ChildPath $script:MD_FILE
 [string] $InterimReadMeDir = Join-Path -Path "$HelpDir" -ChildPath $script:MD_INTERIM_DIR
 [string] $InterimReadMePath = Join-Path -Path $InterimReadMeDir -ChildPath $script:MD_FILE
-[string] $LuaFilterPath =Join-Path -Path $HelpDir -ChildPath $script:LUA_FILTER
+[string] $LuaFilterPath =Join-PathAndQuote -Path $HelpDir -ChildPath $script:LUA_FILTER
 
-[Nullable[datetime]] $LatestReadmeDependency =  Get-ChildItem -Path "$HelpDir\*" -Include *.htm, *.md | Measure-Object -Property LastWriteTime -Maximum | foreach {$_.Maximum}
-[Nullable[datetime]] $InterimReadmeFileTime = Get-ChildItem -Path $InterimReadMeDir -File $script:MD_FILE  | foreach {$_.LastWriteTime}
-[Nullable[datetime]] $TargetReadmeFileTime = Get-ChildItem -Path $ReadMeDir -File $script:MD_FILE  | foreach {$_.LastWriteTime}
-
+[Nullable[datetime]] $LatestReadmeDependency =  Get-LatestWriteTime -Path "$HelpDir\*" -Include *.htm, *.md 
+[Nullable[datetime]] $InterimReadmeFileTime = Get-LastWriteTime -Path $InterimReadMeDir -Filter $script:MD_FILE  
+[Nullable[datetime]] $TargetReadmeFileTime = Get-LastWriteTime -Path $ReadMeDir -Filter $script:MD_FILE  
 
  if($Rebuild -or ($LatestReadmeDependency -gt $InterimReadmeFileTime)){
-    "Staring README.md build"
+    "Starting README.md build"
     Remove-Item -path "$InterimReadMeDir\*" -Include *.md
     Get-ChildItem -Path "$HelpDir\*" -Include *.htm | foreach {
-        [System.IO.FileInfo] $item = Get-Item $_
         [string] $MDName = Join-Path -path $InterimReadMeDir -ChildPath "$($_.BaseName).md"
+        [string] $MDNameQuote = Get-PathQuoteSpace -path $MDName
+        [string] $HTMNameQuote = PathQuoteSpace -Path $_
         "Converting '$_' to '$MDName'"
-        & pandoc -f html -t gfm -s --wrap=auto --lua-filter="`"$LuaFilterPath`"" -o "`"$MDName`"" "`"$_`""
+        & pandoc -f html -t gfm -s --wrap=auto --lua-filter=$LuaFilterPath -o $MDNameQuote $HTMNameQuote
         Add-Content -LiteralPath $MDName -Value "`r`n" 
     }
 
@@ -84,7 +163,7 @@ if($Rebuild -or ($LatestDependency -gt $ChmFileTime)){
     $md_files | foreach{
         [string] $thisPath = Join-Path -path $InterimReadMeDir -childpath $_
 
-        "`t`"$thisPath`""
+        "`t$thisPath"
         
         $md_file_list_arr += $thisPath
     }
