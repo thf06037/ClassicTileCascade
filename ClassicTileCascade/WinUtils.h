@@ -18,6 +18,9 @@ namespace CTWinUtils
 	UINT GetSubMenuPosByString(HMENU hMenu, const std::wstring& szString);
 	bool CheckMenuItem(HMENU hMenu, UINT uID, bool bChecked);
 	bool GetMenuStringSubMenu(HMENU hMenu, UINT uItem, bool bByPosition, std::wstring& szMenu, HMENU* phSubMenu = nullptr);
+	
+	using PopupMap = std::map<std::wstring, ULONG_PTR>;
+	UINT SetSubMenuData(HMENU hMenu, const PopupMap& popupMap);
 
 	// Check whether user is running at escalated privilege level (admin) and start another process as non-admin user.
 	// If user is not running as admin, simply start the process as current user

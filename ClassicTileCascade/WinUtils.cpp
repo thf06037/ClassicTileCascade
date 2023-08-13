@@ -270,3 +270,30 @@ bool CTWinUtils::PathQuoteSpacesW(std::wstring& szPath)
 {
     return (::PathQuoteSpacesW(sz_wbuf(szPath, MAX_PATH)) == TRUE);
 }
+
+UINT CTWinUtils::SetSubMenuData(HMENU hMenu, const PopupMap& popupMap)
+{
+    UINT uRetVal = 0;
+    
+    int nCount = ::GetMenuItemCount(hMenu);
+    
+    for (UINT i = 0; i < static_cast<UINT>(nCount); i++) {
+        std::wstring szMenu;
+        HMENU hSubMenu = nullptr;
+        if (GetMenuStringSubMenu(hMenu, i, true, szMenu, &hSubMenu) && hSubMenu) {
+            PopupMap::const_iterator it = popupMap.find(szMenu);
+            if (it != popupMap.cend()) {
+                MENUINFO mi = { 0 };
+                mi.cbSize = sizeof(mi);
+                mi.fMask = MIM_MENUDATA;
+                mi.dwMenuData = it->second;
+                if (::SetMenuInfo(hSubMenu, &mi)) {
+                    uRetVal++;
+                }
+            }
+            uRetVal += SetSubMenuData(hSubMenu, popupMap);
+        }
+    }
+
+    return uRetVal;
+}

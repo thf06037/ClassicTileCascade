@@ -1,4 +1,4 @@
-/*
+
  * Copyright (c) 2023 thf
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -29,6 +29,9 @@
 #include "ClassicTileWnd.h"
 
 #define SWM_TRAYMSG	WM_APP //the message ID sent to our window
+
+#define MENU_INFO_SETTINGS 1
+#define MENU_INFO_LEFTCLICKDOES 2
 
 //Message Handlers
 /* BOOL Cls_OnSWMTrayMsg(HWND hwnd, WORD wNotifEvent, WORD wIconId, int x, int y) */
@@ -91,6 +94,11 @@ ClassicTileWnd::ClassicTileWnd()
 bool ClassicTileWnd::InitInstance(HINSTANCE hInstance)
 {
     try {
+        const static CTWinUtils::PopupMap POPUP_MAP = {
+            {L"&Settings", MENU_INFO_SETTINGS},
+            {L"&Left click does", MENU_INFO_LEFTCLICKDOES}
+        };
+
         ClassicTileRegUtil::GetRegLogging(m_bLogging);
         if (m_bLogging) {
             if (m_pLogFP) {
@@ -133,6 +141,10 @@ bool ClassicTileWnd::InitInstance(HINSTANCE hInstance)
 
         eval_fatal_nz(AddTrayIcon(hWnd));
 
+        m_hMenu.reset(eval_error_nz(::LoadMenuW(m_hInst, MAKEINTRESOURCEW(IDR_MENUPOPUP))));
+        m_hPopupMenu = eval_error_nz(::GetSubMenu(m_hMenu.get(), 0));
+        eval_error_nz(CTWinUtils::SetSubMenuData(m_hPopupMenu, POPUP_MAP) == POPUP_MAP.size());
+
         log_info("ClassicTileCascade starting.");
     }catch (const LoggingException& le) {
         le.Log();
@@ -168,6 +180,7 @@ LRESULT ClassicTileWnd::CTWWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
         HANDLE_MSG(hwnd, WM_COMMAND, OnCommand);
         HANDLE_MSG(hwnd, WM_CLOSE, OnClose);
         HANDLE_MSG(hwnd, WM_DESTROY, OnDestroy);
+        HANDLE_MSG(hwnd, WM_INITMENUPOPUP, OnInitMenuPopup);
     }
 
     return ::DefWindowProcW(hwnd, uMsg, wParam, lParam);
@@ -371,32 +384,11 @@ void ClassicTileWnd::OnDestroy(HWND)
 
 void ClassicTileWnd::OnContextMenu(HWND hwnd, HWND, UINT xPos, UINT yPos) 
 {
-    const static std::wstring SETTINGS_STRING = L"&Settings";
-    const static std::wstring DEFAULTS_STRING = L"&Left click does";
-
-    const static auto MIN_MAX_DEFAULT = std::ranges::minmax_element(Default2FileMap | std::views::keys);
-
-    SPHMENU hMenu;
     try {
         CloseTaskDlg();
-        hMenu.reset(eval_error_nz(::LoadMenuW(m_hInst, MAKEINTRESOURCEW(IDR_MENUPOPUP))));
-
-        HMENU hPopupMenu = eval_error_nz(::GetSubMenu(hMenu.get(), 0));
         
-        const static UINT SETTING_POS = CTWinUtils::GetSubMenuPosByString(hPopupMenu, SETTINGS_STRING);
-
-        HMENU hSettingsMenu = eval_error_nz(::GetSubMenu(hPopupMenu, SETTING_POS ));
-        eval_error_nz(CTWinUtils::CheckMenuItem(hSettingsMenu, ID_SETTINGS_AUTOSTART, m_bAutoStart));
-        eval_error_nz(CTWinUtils::CheckMenuItem(hSettingsMenu, ID_SETTINGS_DEFWNDTILE, m_bDefWndTile));
-        eval_error_nz(CTWinUtils::CheckMenuItem(hSettingsMenu, ID_SETTINGS_LOGGING, m_bLogging));
-
-        const static UINT DEFAULTS_POS = CTWinUtils::GetSubMenuPosByString(hSettingsMenu, DEFAULTS_STRING);
-
-        HMENU hDefaultsMenu = eval_error_nz(::GetSubMenu(hSettingsMenu, DEFAULTS_POS));
-        eval_error_nz(::CheckMenuRadioItem(hDefaultsMenu, *MIN_MAX_DEFAULT.min, *MIN_MAX_DEFAULT.max, FindMenuId2MenuItem(File2DefaultMap, m_nLeftClick).uDefault, MF_BYCOMMAND));
-
         eval_error_nz(::SetForegroundWindow(hwnd));
-        eval_error_nz(::TrackPopupMenu(hPopupMenu, TPM_BOTTOMALIGN, xPos, yPos, 0, hwnd, nullptr));
+        eval_error_nz(::TrackPopupMenu(m_hPopupMenu, TPM_BOTTOMALIGN, xPos, yPos, 0, hwnd, nullptr));
     }catch (const LoggingException& le) {
         le.Log();
     }catch (...) {
@@ -847,6 +839,84 @@ void ClassicTileWnd::OpenTextFile(HWND hWnd, const std::wstring& szPath)
     }catch (const LoggingException& le) {
         le.Log();
     }catch (...) {
+        log_error("Unhandled exception");
+    }
+}
+
+
+void ClassicTileWnd::OnInitMenuPopup(HWND hWnd, HMENU hMenu, UINT item, BOOL fSystemMenu)
+{
+    bool bHandled = false;
+
+    MENUINFO mi = { 0 };
+    mi.cbSize = sizeof(mi);
+    mi.fMask = MIM_MENUDATA;
+
+    if (
+            !fSystemMenu && 
+            ::GetMenuInfo(hMenu, &mi) && 
+            mi.dwMenuData
+        )
+    {
+        switch (mi.dwMenuData) {
+        case MENU_INFO_SETTINGS:
+            OnSettingsPopup(hMenu);
+            bHandled = true;
+            break;
+
+        case MENU_INFO_LEFTCLICKDOES:
+            OnLeftClickDoesPopup(hMenu);
+            bHandled = true;
+            break;
+        }
+    }
+
+    if (!bHandled) {
+        FORWARD_WM_INITMENUPOPUP(hWnd, hMenu, item, fSystemMenu, DefWindowProcW);
+    }
+}
+
+void ClassicTileWnd::OnSettingsPopup(HMENU hMenu)
+{
+    try {
+        eval_error_nz(CTWinUtils::CheckMenuItem(hMenu, ID_SETTINGS_AUTOSTART, m_bAutoStart));
+        eval_error_nz(CTWinUtils::CheckMenuItem(hMenu, ID_SETTINGS_DEFWNDTILE, m_bDefWndTile));
+        eval_error_nz(CTWinUtils::CheckMenuItem(hMenu, ID_SETTINGS_LOGGING, m_bLogging));
+    } catch (const LoggingException& le) {
+        le.Log();
+    } catch (...) {
+        log_error("Unhandled exception");
+    }
+}
+
+void ClassicTileWnd::OnLeftClickDoesPopup(HMENU hMenu)
+{
+    auto MinMaxMenu = [hMenu](bool bMin) {
+        int nCount = ::GetMenuItemCount(hMenu);
+        if (nCount > 0) {
+            UINT uMeasure = ::GetMenuItemID(hMenu, 0);
+            for (UINT i = 1; i < static_cast<UINT>(nCount); i++) {
+                UINT uId = ::GetMenuItemID(hMenu, i);
+                if (bMin) {
+                    uMeasure = min(uId, uMeasure);
+                } else {
+                    uMeasure = max(uId, uMeasure);
+                }
+            }
+            return uMeasure;
+        }
+        
+        return 0u;
+    };
+
+    const static UINT POPUP_MIN = MinMaxMenu(true);
+    const static UINT POPUP_MAX = MinMaxMenu(false);
+
+    try{
+        eval_error_nz(::CheckMenuRadioItem(hMenu, POPUP_MIN, POPUP_MAX, FindMenuId2MenuItem(File2DefaultMap, m_nLeftClick).uDefault, MF_BYCOMMAND));
+    } catch (const LoggingException& le) {
+        le.Log();
+    } catch (...) {
         log_error("Unhandled exception");
     }
 }

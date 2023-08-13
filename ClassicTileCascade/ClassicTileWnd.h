@@ -89,6 +89,7 @@ protected:
 	void OnCommand(HWND hwnd, int id, HWND, UINT);
 	void OnClose(HWND hwnd);
 	void OnDestroy(HWND);
+	void OnInitMenuPopup(HWND hwnd, HMENU hMenu, UINT item, BOOL fSystemMenu);
 
 	//SWM_TRAYMSG msg handlers
 	void OnContextMenu(HWND hwnd, HWND, UINT xPos, UINT yPos);
@@ -102,6 +103,10 @@ protected:
 
 	//Task Dialog msg handlers
 	void OnHyperlinkClick(LPARAM lpszURL) const;
+
+	//InitMenuPopupHandlers
+	void OnSettingsPopup(HMENU hMenu);
+	void OnLeftClickDoesPopup(HMENU hMenu);
 
 protected:
 	//class constants
@@ -161,5 +166,8 @@ protected:
 
 	// Smart pointer to the FILE* stream used for logging
 	SPFILE m_pLogFP;
+
+	SPHMENU m_hMenu;
+	HMENU m_hPopupMenu = nullptr;
 };
 
