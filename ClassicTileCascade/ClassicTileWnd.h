@@ -17,7 +17,7 @@
 class ClassicTileWnd
 {
 public:
-	ClassicTileWnd();
+	ClassicTileWnd() = default;
 	bool InitInstance(HINSTANCE hInstance);
 	bool RegUnReg(bool& fSuccess);
 	
@@ -69,9 +69,9 @@ protected:
 	void TileCascadeHelper(TILE_CASCADE_FUNC, UINT uHow) const;
 	void CloseTaskDlg();
 	LRESULT CTWWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+	void EnableLogging();
 
 	//Static helper functions
-	//static  File2DefaultStruct FindMenuId2MenuItem(const MenuId2MenuItem& menuID2MenuItem, UINT uSought);
 	static  const File2DefaultStruct& FindMenuId2MenuItem(const MenuId2MenuItem& menuID2MenuItem, UINT uSought);
 	static  bool RegUnRegAsUser(const std::wstring& szFirstArg);
 	static  bool Unregister();

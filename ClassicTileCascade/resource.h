@@ -20,6 +20,8 @@
 #define ID_DEFAULT_SHOWTHEDESKTOP       32813
 #define ID_DEFAULT_UNDOMINIMIZE         32814
 #define ID_SETTINGS_OPENLOGFILE         32815
+#define ID_SETTINGS				        40000
+#define ID_DEFAULT				        40001
 #define IDC_STATIC                      -1
 
 // Next default values for new objects

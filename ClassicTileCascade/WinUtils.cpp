@@ -297,3 +297,41 @@ UINT CTWinUtils::SetSubMenuData(HMENU hMenu, const PopupMap& popupMap)
 
     return uRetVal;
 }
+
+UINT CTWinUtils::SetSubMenuDataFromItemData(HMENU hMenu)
+{
+    UINT uRetVal = 0;
+
+    int nCount = ::GetMenuItemCount(hMenu);
+
+    for (UINT i = 0; i < static_cast<UINT>(nCount); i++) {
+        MENUITEMINFOW mii = { 0 };
+        mii.cbSize = sizeof(mii);
+        mii.fMask = MIIM_FTYPE | MIIM_SUBMENU | MIIM_ID;
+
+        if (    
+                ::GetMenuItemInfoW(hMenu, i, TRUE, &mii)
+                &&
+                mii.hSubMenu
+        ) {
+            if (mii.wID > 0) {
+                MENUINFO mi = { 0 };
+                mi.cbSize = sizeof(mi);
+                mi.fMask = MIM_MENUDATA;
+                mi.dwMenuData = mii.wID;
+                if (::SetMenuInfo(mii.hSubMenu, &mi)) {
+                    uRetVal++;
+                }
+            }
+            uRetVal += SetSubMenuDataFromItemData(mii.hSubMenu);
+        }
+    }
+
+    return uRetVal;
+}
+
+bool CTWinUtils::FileExists(const std::wstring& szPath)
+{
+    DWORD dwAttrib = ::GetFileAttributesW(szPath.c_str());
+    return (dwAttrib != INVALID_FILE_ATTRIBUTES) && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY);
+}

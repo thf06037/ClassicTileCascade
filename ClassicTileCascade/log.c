@@ -174,11 +174,14 @@ static int log_find_fp_ex(FILE* fp, int level, int* pLocation)
     if (pLocation) {
         *pLocation = -1;
     }
-    for (int i = 0; !bFound && (i < MAX_CALLBACKS) && L.callbacks[i].fn ; i++) {
-        Callback* pCB = &L.callbacks[i];
-        bFound = ((pCB->fn == &file_callback) && (pCB->udata == fp) && (pCB->level == level));
-        if (bFound && pLocation) {
-            *pLocation = i;
+
+    if (fp) {
+        for (int i = 0; !bFound && (i < MAX_CALLBACKS) && L.callbacks[i].fn; i++) {
+            Callback* pCB = &L.callbacks[i];
+            bFound = ((pCB->fn == &file_callback) && (pCB->udata == fp) && (pCB->level == level));
+            if (bFound && pLocation) {
+                *pLocation = i;
+            }
         }
     }
 

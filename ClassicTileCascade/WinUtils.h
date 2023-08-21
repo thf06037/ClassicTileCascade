@@ -21,6 +21,7 @@ namespace CTWinUtils
 	
 	using PopupMap = std::map<std::wstring, ULONG_PTR>;
 	UINT SetSubMenuData(HMENU hMenu, const PopupMap& popupMap);
+	UINT SetSubMenuDataFromItemData(HMENU hMenu);
 
 	// Check whether user is running at escalated privilege level (admin) and start another process as non-admin user.
 	// If user is not running as admin, simply start the process as current user
@@ -41,4 +42,6 @@ namespace CTWinUtils
 	bool CreateProcessHelper(const std::wstring& szCommand, const std::wstring& szArguments = L"", LPDWORD lpdwProcId = nullptr, int nShowWindow = -1);
 
 	bool PathQuoteSpacesW(std::wstring& szPath);
+
+	bool FileExists(const std::wstring& szPath);
 }

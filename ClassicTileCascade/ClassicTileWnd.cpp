@@ -30,9 +30,6 @@
 
 #define SWM_TRAYMSG	WM_APP //the message ID sent to our window
 
-#define MENU_INFO_SETTINGS 1
-#define MENU_INFO_LEFTCLICKDOES 2
-
 //Message Handlers
 /* BOOL Cls_OnSWMTrayMsg(HWND hwnd, WORD wNotifEvent, WORD wIconId, int x, int y) */
 #define HANDLE_SWM_TRAYMSG(hwnd, wParam, lParam, fn) \
@@ -86,26 +83,13 @@ const std::string ClassicTileWnd::LOG_PATH_NARROW = []() {
     return szLogPathNarrow;
 }();
 
-ClassicTileWnd::ClassicTileWnd()
-{
-    m_pLogFP.reset(_fsopen(LOG_PATH_NARROW.c_str(), "a+", _SH_DENYWR));
-}
 
 bool ClassicTileWnd::InitInstance(HINSTANCE hInstance)
 {
     try {
-        const static CTWinUtils::PopupMap POPUP_MAP = {
-            {L"&Settings", MENU_INFO_SETTINGS},
-            {L"&Left click does", MENU_INFO_LEFTCLICKDOES}
-        };
-
         ClassicTileRegUtil::GetRegLogging(m_bLogging);
         if (m_bLogging) {
-            if (m_pLogFP) {
-                log_add_fp(m_pLogFP.get(), LOG_TRACE);
-            }else{
-                generate_fatal("Invalid log file stream.");
-            }
+            EnableLogging();
         }
 
         try {
@@ -143,7 +127,7 @@ bool ClassicTileWnd::InitInstance(HINSTANCE hInstance)
 
         m_hMenu.reset(eval_error_nz(::LoadMenuW(m_hInst, MAKEINTRESOURCEW(IDR_MENUPOPUP))));
         m_hPopupMenu = eval_error_nz(::GetSubMenu(m_hMenu.get(), 0));
-        eval_error_nz(CTWinUtils::SetSubMenuData(m_hPopupMenu, POPUP_MAP) == POPUP_MAP.size());
+        eval_error_nz(CTWinUtils::SetSubMenuDataFromItemData(m_hPopupMenu));
 
         log_info("ClassicTileCascade starting.");
     }catch (const LoggingException& le) {
@@ -475,7 +459,7 @@ void ClassicTileWnd::OnSettingsLogging(HWND hwnd)
 
         if (m_bLogging) {
             if (log_find_fp(m_pLogFP.get(), LOG_TRACE) != 0) {
-                eval_error_es(log_add_fp(m_pLogFP.get(), LOG_TRACE));
+                EnableLogging();
                 log_info("Logging enabled.");
             }
 
@@ -656,7 +640,7 @@ bool ClassicTileWnd::RegUnReg(bool& fSuccess)
         LocalFree(lpszArglist);
 
         if (nArgs > 1) {
-            log_add_fp(m_pLogFP.get(), LOG_TRACE);
+            EnableLogging();
 
             fRetVal = true;
 
@@ -822,8 +806,7 @@ void ClassicTileWnd::OpenTextFile(HWND hWnd, const std::wstring& szPath)
             return szNotepadPath;
         }();
 
-        DWORD dwAttrib = ::GetFileAttributes(szPath.c_str());
-        if ((dwAttrib == INVALID_FILE_ATTRIBUTES) || (dwAttrib & FILE_ATTRIBUTE_DIRECTORY)) {
+        if (!CTWinUtils::FileExists(szPath)) {
             ::MessageBoxW(hWnd, std::format(FMT_FILE_NOT_FOUND, szPath).c_str(), L"Classic Tile Cascade", MB_OK | MB_ICONINFORMATION);
         }else {
             std::wstring szResult;
@@ -859,12 +842,12 @@ void ClassicTileWnd::OnInitMenuPopup(HWND hWnd, HMENU hMenu, UINT item, BOOL fSy
         )
     {
         switch (mi.dwMenuData) {
-        case MENU_INFO_SETTINGS:
+        case ID_SETTINGS:
             OnSettingsPopup(hMenu);
             bHandled = true;
             break;
 
-        case MENU_INFO_LEFTCLICKDOES:
+        case ID_DEFAULT:
             OnLeftClickDoesPopup(hMenu);
             bHandled = true;
             break;
@@ -882,6 +865,8 @@ void ClassicTileWnd::OnSettingsPopup(HMENU hMenu)
         eval_error_nz(CTWinUtils::CheckMenuItem(hMenu, ID_SETTINGS_AUTOSTART, m_bAutoStart));
         eval_error_nz(CTWinUtils::CheckMenuItem(hMenu, ID_SETTINGS_DEFWNDTILE, m_bDefWndTile));
         eval_error_nz(CTWinUtils::CheckMenuItem(hMenu, ID_SETTINGS_LOGGING, m_bLogging));
+
+        eval_error_nz(::EnableMenuItem(hMenu, ID_SETTINGS_OPENLOGFILE, MF_BYCOMMAND | (CTWinUtils::FileExists(LOG_PATH) ? MF_ENABLED : MF_GRAYED)) >= 0);
     } catch (const LoggingException& le) {
         le.Log();
     } catch (...) {
@@ -891,17 +876,15 @@ void ClassicTileWnd::OnSettingsPopup(HMENU hMenu)
 
 void ClassicTileWnd::OnLeftClickDoesPopup(HMENU hMenu)
 {
-    auto MinMaxMenu = [hMenu](bool bMin) {
+    using MinMaxFn = const UINT& (*)(const UINT&, const UINT&);
+
+    auto MinMaxMenu = [hMenu](MinMaxFn minMaxFn) {
         int nCount = ::GetMenuItemCount(hMenu);
         if (nCount > 0) {
             UINT uMeasure = ::GetMenuItemID(hMenu, 0);
             for (UINT i = 1; i < static_cast<UINT>(nCount); i++) {
                 UINT uId = ::GetMenuItemID(hMenu, i);
-                if (bMin) {
-                    uMeasure = min(uId, uMeasure);
-                } else {
-                    uMeasure = max(uId, uMeasure);
-                }
+                uMeasure = minMaxFn(uId, uMeasure);
             }
             return uMeasure;
         }
@@ -909,8 +892,8 @@ void ClassicTileWnd::OnLeftClickDoesPopup(HMENU hMenu)
         return 0u;
     };
 
-    const static UINT POPUP_MIN = MinMaxMenu(true);
-    const static UINT POPUP_MAX = MinMaxMenu(false);
+    const static UINT POPUP_MIN = MinMaxMenu(&(std::min));
+    const static UINT POPUP_MAX = MinMaxMenu(&(std::max));
 
     try{
         eval_error_nz(::CheckMenuRadioItem(hMenu, POPUP_MIN, POPUP_MAX, FindMenuId2MenuItem(File2DefaultMap, m_nLeftClick).uDefault, MF_BYCOMMAND));
@@ -918,5 +901,18 @@ void ClassicTileWnd::OnLeftClickDoesPopup(HMENU hMenu)
         le.Log();
     } catch (...) {
         log_error("Unhandled exception");
+    }
+}
+
+void ClassicTileWnd::EnableLogging()
+{
+    if (!m_pLogFP) {
+        m_pLogFP.reset(_fsopen(LOG_PATH_NARROW.c_str(), "a+", _SH_DENYWR));
+    }
+
+    if (m_pLogFP) {
+        log_add_fp(m_pLogFP.get(), LOG_TRACE);
+    } else {
+        generate_fatal("Invalid log file stream.");
     }
 }
