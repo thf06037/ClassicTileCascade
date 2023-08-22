@@ -22,8 +22,8 @@
 
 
 #include "pch.h"
-#include "win_log.h"
 #include "MemMgmt.h"
+#include "win_log.h"
 #include "WinUtils.h"
 
 void CTWinUtils::ShellHelper(LPSHELLFUNC lpShellFunc)
@@ -41,33 +41,6 @@ void CTWinUtils::ShellHelper(LPSHELLFUNC lpShellFunc)
     }catch (...) {
         log_error("Unhandled exception");
     }
-}
-
-UINT CTWinUtils::GetSubMenuPosByString(HMENU hMenu, const std::wstring& szString)
-{
-    int nSubMenuPos = -1;
-    if (hMenu) {
-        int nMenuCount = ::GetMenuItemCount(hMenu);
-        for (int i = 0; i < nMenuCount; i++) {
-            std::wstring szMenuString;
-            HMENU hSubMenu = nullptr;
-            if (GetMenuStringSubMenu(hMenu, i, true, szMenuString, &hSubMenu)
-                && hSubMenu
-                && (szMenuString == szString))
-            {
-                nSubMenuPos = i;
-                break;
-            }
-        }
-    }
-
-    if (nSubMenuPos < 0) {
-        std::string szStringNarrow;
-        Wstring2string(szStringNarrow, szString);
-        std::string err = "No submenu with string " + szStringNarrow;
-        generate_error(err.c_str());
-    }
-    return nSubMenuPos;
 }
 
 bool CTWinUtils::CheckMenuItem(HMENU hMenu, UINT uID, bool bChecked)
@@ -271,33 +244,6 @@ bool CTWinUtils::PathQuoteSpacesW(std::wstring& szPath)
     return (::PathQuoteSpacesW(sz_wbuf(szPath, MAX_PATH)) == TRUE);
 }
 
-UINT CTWinUtils::SetSubMenuData(HMENU hMenu, const PopupMap& popupMap)
-{
-    UINT uRetVal = 0;
-    
-    int nCount = ::GetMenuItemCount(hMenu);
-    
-    for (UINT i = 0; i < static_cast<UINT>(nCount); i++) {
-        std::wstring szMenu;
-        HMENU hSubMenu = nullptr;
-        if (GetMenuStringSubMenu(hMenu, i, true, szMenu, &hSubMenu) && hSubMenu) {
-            PopupMap::const_iterator it = popupMap.find(szMenu);
-            if (it != popupMap.cend()) {
-                MENUINFO mi = { 0 };
-                mi.cbSize = sizeof(mi);
-                mi.fMask = MIM_MENUDATA;
-                mi.dwMenuData = it->second;
-                if (::SetMenuInfo(hSubMenu, &mi)) {
-                    uRetVal++;
-                }
-            }
-            uRetVal += SetSubMenuData(hSubMenu, popupMap);
-        }
-    }
-
-    return uRetVal;
-}
-
 UINT CTWinUtils::SetSubMenuDataFromItemData(HMENU hMenu)
 {
     UINT uRetVal = 0;
@@ -334,4 +280,37 @@ bool CTWinUtils::FileExists(const std::wstring& szPath)
 {
     DWORD dwAttrib = ::GetFileAttributesW(szPath.c_str());
     return (dwAttrib != INVALID_FILE_ATTRIBUTES) && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY);
+}
+
+void CTWinUtils::OpenTextFile(HWND hWnd, const std::wstring& szPath, const std::wstring& szAppName)
+{
+    constexpr static wchar_t FMT_FILE_NOT_FOUND[] = L"Log file <{0}> does not exist yet.";
+
+    try {
+        const static std::wstring NOTEPAD_PATH = [] {
+            eval_error_nz(::SetSearchPathMode(BASE_SEARCH_PATH_ENABLE_SAFE_SEARCHMODE));
+            std::wstring szNotepadPath;
+            sz_wbuf szNotepadPathBuf(szNotepadPath, MAX_PATH);
+            eval_error_nz(::SearchPathW(nullptr, L"notepad.exe", nullptr, szNotepadPathBuf.size(), szNotepadPathBuf, nullptr));
+            return szNotepadPath;
+        }();
+
+        if (!FileExists(szPath)) {
+            ::MessageBoxW(hWnd, std::format(FMT_FILE_NOT_FOUND, szPath).c_str(), szAppName.c_str(), MB_OK | MB_ICONINFORMATION);
+        } else {
+            std::wstring szResult;
+            int nRetVal = reinterpret_cast<int>(::FindExecutableW(szPath.c_str(), NULL, sz_wbuf(szResult, MAX_PATH)));
+            if (nRetVal <= 32) {
+                szResult = NOTEPAD_PATH;
+            }
+
+            std::wstring szPathQuote = szPath;
+            PathQuoteSpacesW(szPathQuote);
+            eval_error_nz(CreateProcessHelper(szResult, szPathQuote, nullptr, SW_SHOWMAXIMIZED));
+        }
+    } catch (const LoggingException& le) {
+        le.Log();
+    } catch (...) {
+        log_error("Unhandled exception");
+    }
 }

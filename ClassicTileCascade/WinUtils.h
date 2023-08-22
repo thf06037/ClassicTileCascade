@@ -15,12 +15,8 @@ namespace CTWinUtils
 	void ShellHelper(LPSHELLFUNC lpShellFunc);
 
 	//Windows menu object helpers
-	UINT GetSubMenuPosByString(HMENU hMenu, const std::wstring& szString);
 	bool CheckMenuItem(HMENU hMenu, UINT uID, bool bChecked);
 	bool GetMenuStringSubMenu(HMENU hMenu, UINT uItem, bool bByPosition, std::wstring& szMenu, HMENU* phSubMenu = nullptr);
-	
-	using PopupMap = std::map<std::wstring, ULONG_PTR>;
-	UINT SetSubMenuData(HMENU hMenu, const PopupMap& popupMap);
 	UINT SetSubMenuDataFromItemData(HMENU hMenu);
 
 	// Check whether user is running at escalated privilege level (admin) and start another process as non-admin user.
@@ -44,4 +40,6 @@ namespace CTWinUtils
 	bool PathQuoteSpacesW(std::wstring& szPath);
 
 	bool FileExists(const std::wstring& szPath);
+
+	void OpenTextFile(HWND hwnd, const std::wstring& szPath, const std::wstring& szAppName);
 }

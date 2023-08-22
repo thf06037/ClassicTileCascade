@@ -22,6 +22,8 @@ extern "C"
 #include "log.h"
 }
 
+extern const DWORD PROC_ID;
+
 class LoggingException 
 {
 protected:
@@ -91,6 +93,8 @@ public:
 	void Log() const override;
 };
 
+bool enable_logging(const std::string& szLogPath, SPFILE& spFIle);
+bool enable_logging(const std::wstring& szLogPath, SPFILE& spFIle);
 
 // Evaluate dwError for == ERROR_SUCCESS (i.e. == 0). if dwError !=ERROR_SUCCESS, throw a DWLoggingException. 
 // DWLoggingException::Log() will call FormatMessage to provide the error description in the log ifle
@@ -114,6 +118,12 @@ HRESULT eval_log_getcomerror(int level, const char* file, int line, const std::s
 
 //All-purpose function that will throw a MsgLoggingException with a user-defined message.
 void generate_exception(int level, const char* file, int line, const std::string& function, const std::string& msg);
+
+#define log_info_procid(fmt, ...) \
+	log_info(("ProcID <%u>: " fmt), PROC_ID __VA_OPT__(,) __VA_ARGS__)
+
+#define log_fatal_procid(fmt, ...) \
+	log_fatal(("ProcID <%u>: " fmt), PROC_ID  __VA_OPT__(,) __VA_ARGS__)
 
 // Macro definitions for each return type and Logging level. The macros will automatically provide
 // the file, line, and function calling to the eval*/generate functions above.

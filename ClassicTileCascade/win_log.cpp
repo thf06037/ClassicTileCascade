@@ -20,7 +20,11 @@
  * IN THE SOFTWARE.
  */
 #include "pch.h"
+#include "MemMgmt.h"
 #include "win_log.h"
+#include "WinUtils.h"
+
+const DWORD PROC_ID = ::GetCurrentProcessId();
 
 DWORD eval_log_errorsuccess_getlasterror(int level, const std::string& file, int line, const std::string& function, const std::string& functionCalled, DWORD dwError)
 {
@@ -123,4 +127,28 @@ void MSGLoggingException::Log() const
 {
     static const std::string FMT_FUNCTION = "%s: %s";
     log_log(m_level, m_file.c_str(), m_line, FMT_FUNCTION.c_str(), m_function.c_str(), m_errMsg.c_str());
+}
+
+
+bool enable_logging(const std::string& szLogPath, SPFILE& spFile )
+{
+    bool bRetVal = false;
+
+
+    if (!spFile) {
+        spFile.reset( _fsopen(szLogPath.c_str(), "a+", _SH_DENYWR) );
+    }
+
+    if (spFile) {
+        bRetVal = (log_add_fp(spFile.get(), LOG_TRACE) == 0);
+    } 
+
+    return bRetVal;
+}
+
+bool enable_logging(const std::wstring& szLogPath, SPFILE& spFile)
+{
+    std::string szLogPathNarrow;
+    CTWinUtils::Wstring2string(szLogPathNarrow, szLogPath);
+    return enable_logging(szLogPathNarrow, spFile);
 }

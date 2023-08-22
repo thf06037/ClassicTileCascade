@@ -19,7 +19,6 @@ class ClassicTileWnd
 public:
 	ClassicTileWnd() = default;
 	bool InitInstance(HINSTANCE hInstance);
-	bool RegUnReg(bool& fSuccess);
 	
 	ClassicTileWnd(const ClassicTileWnd&) = delete;
 	ClassicTileWnd(ClassicTileWnd&&) = delete;
@@ -27,8 +26,9 @@ public:
 	ClassicTileWnd& operator=(ClassicTileWnd&&) noexcept = delete;
 
 protected:
+	////////////////////////////
 	//helper classes & typedefs
-	 
+	////////////////////////////
 	// Class to map the top level tile/cascade actions to the equivalent choices
 	// on the "Settings | Left click does" submenu. Also maps both to the text of the
 	// menu entries for those menus.
@@ -46,94 +46,84 @@ protected:
 		File2DefaultStruct& operator=(File2DefaultStruct&&) noexcept = default;
 	};
 	
-	using MenuId2MenuItem = std::map<UINT, File2DefaultStruct>;
-	using MenuId2MenuItemPair = std::pair<UINT, File2DefaultStruct>;
-	using TILE_CASCADE_FUNC = WORD(WINAPI*)(HWND, UINT, const RECT*, UINT, const HWND*);
 	using HwndVector = std::vector<HWND>;
 	
+	enum class MenuId2MenuItemDir
+	{
+		Default2FileMap,
+		File2DefaultMap
+	};
+	
+	//////////////////
 	//Helper functions
-
+	//////////////////
 	bool AddTrayIcon(HWND hWnd);
-	
-	// Check whether tray icon exists and create it if it doesn't
-	// This is necessary b/c there exist edge cases where this application 
-	// will have been started before the toolbar is created. The message handler
-	// for the class listens for the "TaskbarCreated" message and will create the
-	// Notification Icon if it doesn't exist as of receiving that message
-	bool CheckTrayIcon() const;
-	
 	// Set the hover-over tool tip for the notification icon using the selected value of the 
 	// "Settings | Left click does" radio button submenu
 	void GetToolTip();
-	
-	void TileCascadeHelper(TILE_CASCADE_FUNC, UINT uHow) const;
 	void CloseTaskDlg();
 	LRESULT CTWWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	void EnableLogging();
 
+	/////////////////////////
 	//Static helper functions
-	static  const File2DefaultStruct& FindMenuId2MenuItem(const MenuId2MenuItem& menuID2MenuItem, UINT uSought);
-	static  bool RegUnRegAsUser(const std::wstring& szFirstArg);
-	static  bool Unregister();
-	static  bool Register();
-	static  void OpenTextFile(HWND hwnd, const std::wstring& szPath);
+	/////////////////////////
+	static  const File2DefaultStruct& FindMenuId2MenuItem(MenuId2MenuItemDir menuID2MenuItemDir, UINT uSought);
 
+	////////////////////
 	//callback functions
+	////////////////////
 	static LRESULT CALLBACK s_WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	static HRESULT CALLBACK s_TaskDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, LONG_PTR lpRefData);
 	static BOOL CALLBACK EnumProc(HWND hwnd, LPARAM lParam);
 
-
+	////////////////////////
 	//Top-level msg handlers
+	////////////////////////
 	void OnSWMTrayMsg(HWND hwnd, WORD wNotifEvent, WORD wIconId, int x, int y);
 	void OnCommand(HWND hwnd, int id, HWND, UINT);
 	void OnClose(HWND hwnd);
 	void OnDestroy(HWND);
 	void OnInitMenuPopup(HWND hwnd, HMENU hMenu, UINT item, BOOL fSystemMenu);
 
+	//////////////////////////
 	//SWM_TRAYMSG msg handlers
+	//////////////////////////
 	void OnContextMenu(HWND hwnd, HWND, UINT xPos, UINT yPos);
 
+	//////////////////////////////
 	//WM_COMMAND menu msg handlers
+	//////////////////////////////
 	void OnHelp(HWND hwnd) const;
 	void OnChangeDefault(int id);
 	void OnSettingsAutoStart();
 	void OnSettingsLogging(HWND hwnd);
 	void OnSettingsDefWndTile();
 
+	//////////////////////////
 	//Task Dialog msg handlers
+	//////////////////////////
 	void OnHyperlinkClick(LPARAM lpszURL) const;
 
+	///////////////////////
 	//InitMenuPopupHandlers
+	///////////////////////
 	void OnSettingsPopup(HMENU hMenu);
 	void OnLeftClickDoesPopup(HMENU hMenu);
 
 protected:
+	/////////////////
 	//class constants
-
+	/////////////////
 	// For use with NOTIFYICONDATA::uID
 	constexpr static UINT TRAYICONID = 1;
+	const static std::wstring APP_NAME;
 
-	// Windows class name for invisible window that handles notification icon
-	// messages
-	const static std::wstring CLASS_NAME;
-
-	// Accepts value of ::RegisterWindowMessageW(L"TaskbarCreated"). 
-	// See comment above re: CheckTrayIcon
-	const static UINT WM_TASKBARCREATED;
-
-	// 2 maps to convert top level tile/cascade menu actions to the equivalent choices
-	// on the "Settings | Left click does" submenu and vice versa
-	const static MenuId2MenuItem Default2FileMap;
-	const static MenuId2MenuItem File2DefaultMap;
-
-	const static std::wstring CURR_MODULE_PATH;
-	const static std::wstring LOG_PATH;
-	const static std::string LOG_PATH_NARROW;
 
 protected:
+	//////////////////
 	//instance members
-
+	//////////////////
 
 	// HINSTANCE handle for use in member functions that need to access 
 	// resources, etc.

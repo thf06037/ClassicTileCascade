@@ -5,7 +5,6 @@
  * under the terms of the MIT license. See `MemMgmt.cpp` for details.
  */
 #pragma once
-#include "win_log.h"
 
 // Type definitions of smart pointers, with custom deleters for various Win32 object types
 // Also includes a utility class (CCoInitialize) for automatically calling CoInitialize and 
@@ -91,7 +90,7 @@ struct CCoInitialize
 {
     CCoInitialize()
     {
-        eval_error_hr(::CoInitialize(NULL));
+        ::CoInitialize(NULL);
     }
 
     ~CCoInitialize()
