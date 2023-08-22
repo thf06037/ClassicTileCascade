@@ -17,13 +17,7 @@
 class ClassicTileWnd
 {
 public:
-	ClassicTileWnd() = default;
-	bool InitInstance(HINSTANCE hInstance);
-	
-	ClassicTileWnd(const ClassicTileWnd&) = delete;
-	ClassicTileWnd(ClassicTileWnd&&) = delete;
-	ClassicTileWnd& operator=(const ClassicTileWnd&) noexcept = delete;
-	ClassicTileWnd& operator=(ClassicTileWnd&&) noexcept = delete;
+	static bool Run(HINSTANCE hInst);
 
 protected:
 	////////////////////////////
@@ -53,7 +47,24 @@ protected:
 		Default2FileMap,
 		File2DefaultMap
 	};
+
+	struct HookStruct
+	{
+		ClassicTileWnd* pThis;
+		HHOOK hHook;
+	};
 	
+	//////////////////
+	//Main functions
+	//////////////////
+	ClassicTileWnd() {}
+	bool InitInstance(HINSTANCE hInstance);
+
+	ClassicTileWnd(const ClassicTileWnd&) = delete;
+	ClassicTileWnd(ClassicTileWnd&&) = delete;
+	ClassicTileWnd& operator=(const ClassicTileWnd&) noexcept = delete;
+	ClassicTileWnd& operator=(ClassicTileWnd&&) noexcept = delete;
+
 	//////////////////
 	//Helper functions
 	//////////////////
@@ -75,15 +86,16 @@ protected:
 	////////////////////
 	static LRESULT CALLBACK s_WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	static HRESULT CALLBACK s_TaskDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, LONG_PTR lpRefData);
-	static BOOL CALLBACK EnumProc(HWND hwnd, LPARAM lParam);
+	static BOOL CALLBACK s_EnumProc(HWND hwnd, LPARAM lParam);
+	static LRESULT CALLBACK s_CBTProc(int code, WPARAM wp, LPARAM lp);
 
 	////////////////////////
 	//Top-level msg handlers
 	////////////////////////
 	void OnSWMTrayMsg(HWND hwnd, WORD wNotifEvent, WORD wIconId, int x, int y);
 	void OnCommand(HWND hwnd, int id, HWND, UINT);
-	void OnClose(HWND hwnd);
-	void OnDestroy(HWND);
+	void OnClose(HWND hwnd, bool bDestroy = true);
+	void OnDestroy(HWND, bool bQuit = true);
 	void OnInitMenuPopup(HWND hwnd, HMENU hMenu, UINT item, BOOL fSystemMenu);
 
 	//////////////////////////

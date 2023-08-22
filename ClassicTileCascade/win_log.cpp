@@ -140,7 +140,11 @@ bool enable_logging(const std::string& szLogPath, SPFILE& spFile )
     }
 
     if (spFile) {
-        bRetVal = (log_add_fp(spFile.get(), LOG_TRACE) == 0);
+        if (log_find_fp(spFile.get(), LOG_TRACE) == 0) {
+            bRetVal = true;
+        } else {
+            bRetVal = (log_add_fp(spFile.get(), LOG_TRACE) == 0);
+        }
     } 
 
     return bRetVal;

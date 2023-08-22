@@ -69,15 +69,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     
     // No command line parameters passed - create notification icon and
     // wire the message handlers for the notification icon
-    //ClassicTileWnd classicTileWnd(LOG_PATH, CURR_MODULE_PATH);
-    ClassicTileWnd classicTileWnd;
-    if (!classicTileWnd.InitInstance(hInstance)){
+    if(!ClassicTileWnd::Run(hInstance)){
         return 1;
     }
 
     // if we made it to here, our notification icon is created and 
     // message handlers are set up. Run a normal windows msg loop
-    MSG msg;
+    MSG msg = { 0 };
 
     while (::GetMessageW(&msg, nullptr, 0, 0) > 0)
     {
