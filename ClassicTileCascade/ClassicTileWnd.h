@@ -7,10 +7,8 @@
 #pragma once
 
 // Creates a Shell Notification Icon and encapsulates an invisible window that processes messages coming from 
-// that Shell Notification icon. Caller instantiates a ClassicTileWnd, calls RegUnReg to determine if 
-// command line parameters have been passed for the purposes of registering or unregistering the program 
-// (these would be passed by Windows installer as part of a custom instal step). RegUnReg returns false if no
-// command line parameters have been passed and then caller should call InitInstance, which will deserialize
+// that Shell Notification icon. Caller calls ClassicTileWnd::Run which 
+// instantiates a singleton ClassicTileWnd object and calls InitInstance, which will deserialize
 // state from the registry, set up logging, and create the Shell Notification Icon. Once InitInstance returns 
 // successfully, caller should start a Windows messaging loop.
 

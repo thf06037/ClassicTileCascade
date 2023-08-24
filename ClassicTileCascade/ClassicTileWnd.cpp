@@ -66,7 +66,7 @@ bool ClassicTileWnd::InitInstance(HINSTANCE hInstance)
                 eval_fatal_nz(::UnregisterClassW(CLASS_NAME.c_str(), m_hInst));
                 ::ZeroMemory(&wcex, sizeof(wcex));
             }
-            m_hMenu.release();
+            m_hMenu.reset();
             m_hPopupMenu = nullptr;
         } else {
             try {

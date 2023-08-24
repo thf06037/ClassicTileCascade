@@ -9,6 +9,9 @@
 // Type definitions of smart pointers, with custom deleters for various Win32 object types
 // Also includes a utility class (CCoInitialize) for automatically calling CoInitialize and 
 // CoUnitialize at entry/exit of scope
+// Finally, includes a class that simplifies using std::basic_string as a buffer for C-style
+// char* routines. Upon construction, this class takes a std::basic_string, optionally resizes to a buffer size.
+// Also will optionally remove the null terminator and anything after it upon destruction
 
 // Custom deleters
 struct HKEY_deleter {

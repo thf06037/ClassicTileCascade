@@ -527,8 +527,8 @@
                             "Type" = "3:3"
                             "ContextData" = "8:"
                             "Attributes" = "3:0"
-                            "Setting" = "3:1"
-                            "Value" = "8:#1202"
+                            "Setting" = "3:2"
+                            "Value" = "8:WARNING: This computer program is protected under the terms of the MIT free software license."
                             "DefaultValue" = "8:#1202"
                             "UsePlugInResources" = "11:TRUE"
                             }
@@ -630,8 +630,8 @@
                             "Type" = "3:3"
                             "ContextData" = "8:"
                             "Attributes" = "3:0"
-                            "Setting" = "3:1"
-                            "Value" = "8:#1202"
+                            "Setting" = "3:2"
+                            "Value" = "8:WARNING: This computer program is protected under the terms of the MIT free software license."
                             "DefaultValue" = "8:#1202"
                             "UsePlugInResources" = "11:TRUE"
                             }
@@ -834,7 +834,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_0F81D95FEC084AF39E46CE8AA2BDAA31"
             {
-            "SourcePath" = "8:..\\Release\\ClassicTileCascade.exe"
+            "SourcePath" = "8:..\\Debug\\ClassicTileCascade.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_B79E9FAA66CD4C8C817D057C097879A3"

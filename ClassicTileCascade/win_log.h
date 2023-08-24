@@ -119,6 +119,7 @@ HRESULT eval_log_getcomerror(int level, const char* file, int line, const std::s
 //All-purpose function that will throw a MsgLoggingException with a user-defined message.
 void generate_exception(int level, const char* file, int line, const std::string& function, const std::string& msg);
 
+//Macro definitions for versions of log_info and log_fatal that will also trace the process ID
 #define log_info_procid(fmt, ...) \
 	log_info(("ProcID <%u>: " fmt), PROC_ID __VA_OPT__(,) __VA_ARGS__)
 

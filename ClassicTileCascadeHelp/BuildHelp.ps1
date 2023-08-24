@@ -107,7 +107,7 @@ Set-Variable -Name LUA_FILTER -Value "image-filter.lua" -Option Constant
 if($Rebuild -or ($LatestDependency -gt $ChmFileTime)){
     "Starting CHM build"
     "Compiling HTML Help Project '$HhpPath'"
-    & $script:HH_CMD $HhpPath
+    & $script:HH_CMD $HhpPath | where {$_.trim() -ne ""}
     "Copying '$ChmPath' to '$TargetChmPath'"
     Copy-Item -path $ChmPath -Destination $TargetChmPath 
  }elseif($ChmFileTime -gt $TargetChmFileTime){

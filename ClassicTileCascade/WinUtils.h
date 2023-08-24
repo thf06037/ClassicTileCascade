@@ -35,11 +35,16 @@ namespace CTWinUtils
 	void Wstring2string(std::string& szString, const std::wstring& szWString);
 	void String2wstring(std::wstring& szWString, const std::string& szString);
 	
+	// Wrapper for CreateProcess
 	bool CreateProcessHelper(const std::wstring& szCommand, const std::wstring& szArguments = L"", LPDWORD lpdwProcId = nullptr, int nShowWindow = -1);
+
 
 	bool PathQuoteSpacesW(std::wstring& szPath);
 
+	// checks that file exists and is not a directory
 	bool FileExists(const std::wstring& szPath);
 
+	// Opens a text file using the default app based on app extension. If file type does not 
+	// have a default, fallback to use notepad.exe
 	void OpenTextFile(HWND hwnd, const std::wstring& szPath, const std::wstring& szAppName);
 }

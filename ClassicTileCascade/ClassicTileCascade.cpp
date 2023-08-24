@@ -229,10 +229,10 @@ bool Register()
         eval_error_es(ClassicTileRegUtil::SetRegLeftClickAction(ID_FILE_CASCADEWINDOWS));
         log_info_procid("Added Left Click Action registry value.");
 
-        eval_error_es(ClassicTileRegUtil::SetRegLogging(0));
+        eval_error_es(ClassicTileRegUtil::SetRegLogging(false));
         log_info_procid("Added Logging registry value.");
 
-        eval_error_es(ClassicTileRegUtil::SetRegDefWndTile(0));
+        eval_error_es(ClassicTileRegUtil::SetRegDefWndTile(false));
         log_info_procid("Added Default/Custom Window Tile/Cascade registry value.");
 
         eval_error_es(ClassicTileRegUtil::SetRegRun());
