@@ -79,8 +79,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     while (::GetMessageW(&msg, nullptr, 0, 0) > 0)
     {
-        ::TranslateMessage(&msg);
-        ::DispatchMessageW(&msg);
+        //if (!ClassicTileWnd::ProcessDlgMsg(&msg)) {
+        if (!ClassicTileWnd::CTWProcessDlgMsg(&msg)) {
+            ::TranslateMessage(&msg);
+            ::DispatchMessageW(&msg);
+        }
     }
 
     return static_cast<int>(msg.wParam);
@@ -234,6 +237,9 @@ bool Register()
 
         eval_error_es(ClassicTileRegUtil::SetRegDefWndTile(false));
         log_info_procid("Added Default/Custom Window Tile/Cascade registry value.");
+
+        eval_error_es(ClassicTileRegUtil::SetRegStatusBar(true));
+        log_info_procid("Added Status Bar registry value.");
 
         eval_error_es(ClassicTileRegUtil::SetRegRun());
         log_info_procid("Added Auto Run registry value.");

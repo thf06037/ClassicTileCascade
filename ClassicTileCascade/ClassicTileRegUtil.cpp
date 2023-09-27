@@ -39,6 +39,8 @@ const static std::wstring REG_RUN_PATH = L"Software\\Microsoft\\Windows\\Current
 const static std::wstring REG_RUN_NAME = L"ClassicTileCascade";
 const static std::wstring REG_LOGGING_VAL = L"Logging";
 const static std::wstring REG_DEFWNDTILE_VAL = L"DefWndTile";
+const static std::wstring REG_STATUSBAR_VAL = L"StatusBar";
+
 
 LONG OpenOrCreateRegKey(const std::wstring& szPath, bool bCreate, SPHKEY& hKey)
 {
@@ -168,4 +170,14 @@ LONG ClassicTileRegUtil::GetRegDefWndTile(bool& bDefWndTile)
 LONG ClassicTileRegUtil::SetRegDefWndTile(bool bDefWndTile)
 {
     return SetBoolRegValue(REG_KEY_PATH, REG_DEFWNDTILE_VAL, bDefWndTile, true);
+}
+
+LONG ClassicTileRegUtil::GetRegStatusBar(bool& bStatusBar)
+{
+    return GetBoolRegValue(REG_KEY_PATH, REG_STATUSBAR_VAL, bStatusBar);
+}
+
+LONG ClassicTileRegUtil::SetRegStatusBar(bool bStatusBar)
+{
+    return SetBoolRegValue(REG_KEY_PATH, REG_STATUSBAR_VAL, bStatusBar, true);
 }

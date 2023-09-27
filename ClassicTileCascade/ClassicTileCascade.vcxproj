@@ -227,7 +227,9 @@
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="BaseWnd.h" />
     <ClInclude Include="ClassicTileWnd.h" />
+    <ClInclude Include="CLogViewer.h" />
     <ClInclude Include="CTGlobals.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="ClassicTileRegUtil.h" />
@@ -243,6 +245,7 @@
     <ClCompile Include="ClassicTileCascade.cpp" />
     <ClCompile Include="ClassicTileRegUtil.cpp" />
     <ClCompile Include="ClassicTileWnd.cpp" />
+    <ClCompile Include="CLogViewer.cpp" />
     <ClCompile Include="CTGlobals.cpp" />
     <ClCompile Include="log.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -273,6 +276,7 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ClassicTileCascade.rc" />
+    <ResourceCompile Include="LogViewer.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="BannerBitmap.bmp" />

@@ -42,4 +42,12 @@
 #include <algorithm>
 #include <io.h>
 #include <ranges>
+
+#include <tom.h>
+#include <richedit.h>
+#include <richole.h>
+#include <commdlg.h>
+#pragma comment(lib, "Comdlg32.lib")
+#include <wingdi.h>
+
 #endif //PCH_H

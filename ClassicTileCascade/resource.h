@@ -24,6 +24,30 @@
 #define ID_DEFAULT				        40001
 #define IDC_STATIC                      -1
 
+#define IDD_GOTO                        9
+#define IDC_LOGVIEWER                   109
+#define IDC_EDITLINE                    1000
+#define IDC_BUTTONGOTO                  1001
+#define ID_FILE_RELOAD                  32771
+#define ID_EDIT_COPY                    32772
+#define ID_EDIT_FIND                    32773
+#define ID_EDIT_FINDNEXT                32774
+#define ID_EDIT_FINDPREVIOUS            32775
+#define ID_EDIT_GOTO                    32776
+#define ID_EDIT_SELECTALL               32777
+#define ID_VIEW_ZOOM                    32781
+#define ID_ZOOM_ZOOMIN                  32782
+#define ID_ZOOM_ZOOMOUT                 32783
+#define ID_VIEW_LINENUMBERS             32786
+#define ID_VIEW_STATUSBAR				32788
+#define IDC_LOGEDIT                     50000
+#define ID_FILE                         50001
+#define ID_EDIT                         50002
+#define ID_VIEW                         50003
+#define ID_ZOOM                         50004
+#define IDC_LOGSTATUS					50006	
+
+
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED

@@ -291,7 +291,8 @@ void CTWinUtils::OpenTextFile(HWND hWnd, const std::wstring& szPath, const std::
             eval_error_nz(::SetSearchPathMode(BASE_SEARCH_PATH_ENABLE_SAFE_SEARCHMODE));
             std::wstring szNotepadPath;
             sz_wbuf szNotepadPathBuf(szNotepadPath, MAX_PATH);
-            eval_error_nz(::SearchPathW(nullptr, L"notepad.exe", nullptr, szNotepadPathBuf.size(), szNotepadPathBuf, nullptr));
+            //eval_error_nz(::SearchPathW(nullptr, L"notepad.exe", nullptr, szNotepadPathBuf.size(), szNotepadPathBuf, nullptr));
+            eval_error_nz(::SearchPathW(nullptr, L"notepad.exe", nullptr, static_cast<DWORD>(szNotepadPathBuf.size()), szNotepadPathBuf, nullptr));
             return szNotepadPath;
         }();
 
@@ -299,7 +300,8 @@ void CTWinUtils::OpenTextFile(HWND hWnd, const std::wstring& szPath, const std::
             ::MessageBoxW(hWnd, std::format(FMT_FILE_NOT_FOUND, szPath).c_str(), szAppName.c_str(), MB_OK | MB_ICONINFORMATION);
         } else {
             std::wstring szResult;
-            int nRetVal = reinterpret_cast<int>(::FindExecutableW(szPath.c_str(), NULL, sz_wbuf(szResult, MAX_PATH)));
+            //int nRetVal = reinterpret_cast<int>(::FindExecutableW(szPath.c_str(), NULL, sz_wbuf(szResult, MAX_PATH)));
+            LONG_PTR nRetVal = reinterpret_cast<LONG_PTR>(::FindExecutableW(szPath.c_str(), NULL, sz_wbuf(szResult, MAX_PATH)));
             if (nRetVal <= 32) {
                 szResult = NOTEPAD_PATH;
             }

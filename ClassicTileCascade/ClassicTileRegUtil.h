@@ -20,5 +20,6 @@ namespace ClassicTileRegUtil
 	LONG DeleteRegRun();
 	LONG GetRegDefWndTile(bool& bDefWndTile);
 	LONG SetRegDefWndTile(bool bDefWndTile);
-	
+	LONG GetRegStatusBar(bool& bStatusBar);
+	LONG SetRegStatusBar(bool bStatusBar);
 }

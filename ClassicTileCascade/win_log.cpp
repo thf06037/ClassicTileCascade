@@ -88,13 +88,15 @@ void HRLoggingException::Log() const
 
     std::string szErrMsg;
     HRESULT hrGEI = ::GetErrorInfo(NULL, &spErrInfo);
-    if (SUCCEEDED(hrGEI)) {
+    //if (SUCCEEDED(hrGEI)) {
+    if (hrGEI == S_OK) {
         _bstr_t szBDesc;
         hrGEI = spErrInfo->GetDescription(szBDesc.GetAddress());
         szErrMsg = static_cast<LPSTR>(szBDesc);
     }
 
-    if (FAILED(hrGEI)) {
+//    if (FAILED(hrGEI)) {
+    if (hrGEI != S_OK) {
         if (!FormatMsg(m_errVal, szErrMsg)) {
             szErrMsg = "Unknown COM error";
         }

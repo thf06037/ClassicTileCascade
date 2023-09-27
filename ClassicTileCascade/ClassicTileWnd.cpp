@@ -40,98 +40,77 @@
 
 const std::wstring ClassicTileWnd::APP_NAME = L"Classic Tile Cascade";
 
-bool ClassicTileWnd::InitInstance(HINSTANCE hInstance)
+ClassicTileWnd ClassicTileWnd::s_classicTileWnd;
+
+ClassicTileWnd::ClassicTileWnd()
+    : BaseWnd(true){}
+
+
+bool ClassicTileWnd::BeforeWndCreate(bool bRanPrior) 
 {
     const static std::wstring CLASS_NAME = L"ClassicTileWndClass";
+    ClassicTileRegUtil::GetRegLogging(m_bLogging);
+    if (m_bLogging) {
+        EnableLogging();
+    }
 
-    try {
-        ClassicTileRegUtil::GetRegLogging(m_bLogging);
-        if (m_bLogging) {
-            EnableLogging();
-        }
-
-        WNDCLASSEXW wcex = { 0 };
-        wcex.cbSize = sizeof(wcex);
-
-        if (m_hInst) {
-            CloseTaskDlg();
-
-            if (m_niData.hWnd) {
-                OnClose(m_niData.hWnd, false);
-                OnDestroy(m_niData.hWnd, false);
-                ::ZeroMemory(&m_niData, sizeof(m_niData));
+    if (bRanPrior) {
+        CloseTaskDlg();
+        if (m_hWnd) {
+            m_bQuit = false;
+            try {
+                OnClose(m_hWnd);
+            } catch (...) {
+                m_bQuit = true;
+                throw;
             }
+            m_bQuit = true;
 
-            if (::GetClassInfoExW(m_hInst, CLASS_NAME.c_str(), &wcex)) {
-                eval_fatal_nz(::UnregisterClassW(CLASS_NAME.c_str(), m_hInst));
-                ::ZeroMemory(&wcex, sizeof(wcex));
-            }
             m_hMenu.reset();
             m_hPopupMenu = nullptr;
-        } else {
-            try {
-                eval_warn_nz(::SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2));
-            } catch (const LoggingException& le) {
-                le.Log();
-            } catch (...) {
-                log_error("Unhandled exception");
-            }
 
-            ::InitCommonControls();
+            ::ZeroMemory(&m_niData, sizeof(m_niData));
         }
-
-        m_hInst = hInstance; 
-
-        LONG lReturnValue = ClassicTileRegUtil::GetRegLeftClickAction(m_nLeftClick);
-        if (lReturnValue != ERROR_SUCCESS) {
-            m_nLeftClick = ID_FILE_CASCADEWINDOWS;
-        }
-
-        m_bAutoStart = (ClassicTileRegUtil::CheckRegRun() == ERROR_SUCCESS);
-
-        ClassicTileRegUtil::GetRegDefWndTile(m_bDefWndTile);
-
-        wcex.cbSize = sizeof(wcex);
-        wcex.lpfnWndProc = s_WndProc;
-        wcex.hInstance = m_hInst;
-        wcex.lpszClassName = CLASS_NAME.c_str();
-        wcex.cbWndExtra = sizeof(this);
-
-        eval_fatal_nz(::RegisterClassExW(&wcex));
-
-        HookStruct hookStruct = { this, eval_fatal_nz(::SetWindowsHookExW(WH_CBT, s_CBTProc, 0, GetCurrentThreadId())) };
-        
-        HWND hWnd = nullptr;
-        
+    }else {
         try {
-            hWnd = eval_fatal_nz(::CreateWindowW(CLASS_NAME.c_str(), nullptr, 0, 0, 0, 0, 0, nullptr, nullptr, m_hInst, &hookStruct));
+            eval_warn_nz(::SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2));
+        } catch (const LoggingException& le) {
+            le.Log();
         } catch (...) {
-            ::UnhookWindowsHookEx(hookStruct.hHook);
-            throw;
+            log_error("Unhandled exception");
         }
 
-        eval_fatal_nz(::UnhookWindowsHookEx(hookStruct.hHook));
-
-
-        eval_fatal_nz(AddTrayIcon(hWnd));
-
-        m_hMenu.reset(eval_error_nz(::LoadMenuW(m_hInst, MAKEINTRESOURCEW(IDR_MENUPOPUP))));
-        m_hPopupMenu = eval_error_nz(::GetSubMenu(m_hMenu.get(), 0));
-        eval_error_nz(CTWinUtils::SetSubMenuDataFromItemData(m_hPopupMenu));
-
-        log_info("ClassicTileCascade starting.");
-    }catch (const LoggingException& le) {
-        le.Log();
-        return false;
-    }catch (...) {
-        log_error("Unhandled exception");
-        return false;
+        ::InitCommonControls();
     }
+
+    LONG lReturnValue = ClassicTileRegUtil::GetRegLeftClickAction(m_nLeftClick);
+    if (lReturnValue != ERROR_SUCCESS) {
+        m_nLeftClick = ID_FILE_CASCADEWINDOWS;
+    }
+
+    m_bAutoStart = (ClassicTileRegUtil::CheckRegRun() == ERROR_SUCCESS);
+
+    ClassicTileRegUtil::GetRegDefWndTile(m_bDefWndTile);
+
+    m_wcex.lpszClassName = CLASS_NAME.c_str();
 
     return true;
 }
 
-LRESULT ClassicTileWnd::CTWWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+bool ClassicTileWnd::AfterWndCreate(bool bRanPrior)
+{
+    eval_fatal_nz(AddTrayIcon(m_hWnd));
+
+    m_hMenu.reset(eval_error_nz(::LoadMenuW(m_hInst, MAKEINTRESOURCEW(IDR_MENUPOPUP))));
+    m_hPopupMenu = eval_error_nz(::GetSubMenu(m_hMenu.get(), 0));
+    eval_error_nz(CTWinUtils::SetSubMenuDataFromItemData(m_hPopupMenu));
+
+    log_info("ClassicTileCascade starting.");
+    
+    return true;
+}
+
+LRESULT ClassicTileWnd::ClassWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     const static UINT WM_TASKBARCREATED =  ::RegisterWindowMessageW(L"TaskbarCreated");
 
@@ -158,7 +137,7 @@ LRESULT ClassicTileWnd::CTWWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
         break;
     }
 
-    return ::DefWindowProcW(hwnd, uMsg, wParam, lParam);
+    return __super::ClassWndProc(hwnd, uMsg, wParam, lParam);
 }
 
 bool ClassicTileWnd::AddTrayIcon(HWND hWnd)
@@ -187,27 +166,6 @@ bool ClassicTileWnd::AddTrayIcon(HWND hWnd)
     return true;
 }
 
-LRESULT CALLBACK ClassicTileWnd::s_WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-    LRESULT nRetVal = 0;
-    ClassicTileWnd* pThis = reinterpret_cast<ClassicTileWnd*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-
-    if (pThis) {
-        nRetVal = pThis->CTWWndProc(hwnd, uMsg, wParam, lParam);
-    } else {
-        switch (uMsg) {
-        case WM_NCCREATE:
-            nRetVal = FALSE;
-            break;
-
-        case WM_CREATE:
-            nRetVal = -1;
-            break;
-        }
-    }
-
-    return  nRetVal;
-}
 
 void ClassicTileWnd::CloseTaskDlg()
 {
@@ -238,7 +196,7 @@ void ClassicTileWnd::OnSWMTrayMsg(HWND hwnd, WORD wNotifEvent, WORD wIconId, int
     }
 
     if (!bHandled) {
-        FORWARD_SWM_TRAYMSG(hwnd, wNotifEvent, wIconId, x, y, DefWindowProcW);
+        FORWARD_SWM_TRAYMSG(hwnd, wNotifEvent, wIconId, x, y, __super::ClassWndProc);
     }
 }
 
@@ -306,28 +264,31 @@ void ClassicTileWnd::OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         break;
 
     case ID_SETTINGS_OPENLOGFILE:
-        CTWinUtils::OpenTextFile(hwnd, CTGlobals::LOG_PATH, APP_NAME);
+        OnSettingsOpenLogFile(hwnd, CTGlobals::LOG_PATH);
         break;
 
     default:
-        FORWARD_WM_COMMAND(hwnd, id, hwndCtl, codeNotify, DefWindowProcW);
+        FORWARD_WM_COMMAND(hwnd, id, hwndCtl, codeNotify, __super::ClassWndProc);
         break;
     }
 
 
 }
 
-void ClassicTileWnd::OnClose(HWND hwnd, bool bDestroy)
+void ClassicTileWnd::OnClose(HWND hwnd)
 {
+
+    if (m_logViewer.GetHWND()) {
+        ::SendMessageW(m_logViewer.GetHWND(), WM_CLOSE, 0, 0);
+    }
+
     ::HtmlHelpW(nullptr, nullptr, HH_CLOSE_ALL, 0);
     ::Sleep(100);
 
-    if (bDestroy) {
-        ::DestroyWindow(hwnd);
-    }
+    __super::OnClose(hwnd);
 }
 
-void ClassicTileWnd::OnDestroy(HWND, bool bQuit)
+void ClassicTileWnd::OnDestroy(HWND hwnd)
 {
     try {
         if (m_niData.hIcon && eval_error_nz(::DestroyIcon(m_niData.hIcon))) {
@@ -348,11 +309,11 @@ void ClassicTileWnd::OnDestroy(HWND, bool bQuit)
         log_error("Unhandled exception");
     }
 
-    if (bQuit) {
+    if (m_bQuit) {
         log_info("ClassicTileCascade ending.");
-
-        ::PostQuitMessage(0);
     }
+
+    __super::OnDestroy(hwnd);
 }
 
 void ClassicTileWnd::OnContextMenu(HWND hwnd, HWND, UINT xPos, UINT yPos) 
@@ -632,11 +593,11 @@ ClassicTileWnd::File2DefaultStruct::File2DefaultStruct(UINT uDefault_, UINT uFil
 
 }
 
-void ClassicTileWnd::OnHyperlinkClick(LPARAM lpszURL) const
+void ClassicTileWnd::OnHyperlinkClick(LPARAM lpszURL) 
 {
     try {
         const std::wstring szURL = eval_error_nz(reinterpret_cast<LPCWSTR>(lpszURL));
-        CTWinUtils::OpenTextFile(m_niData.hWnd, szURL, APP_NAME);
+        OnSettingsOpenLogFile(m_niData.hWnd, szURL);
     }catch (const LoggingException& le) {
         le.Log();
     }catch (...) {
@@ -673,7 +634,7 @@ void ClassicTileWnd::OnInitMenuPopup(HWND hWnd, HMENU hMenu, UINT item, BOOL fSy
     }
 
     if (!bHandled) {
-        FORWARD_WM_INITMENUPOPUP(hWnd, hMenu, item, fSystemMenu, DefWindowProcW);
+        FORWARD_WM_INITMENUPOPUP(hWnd, hMenu, item, fSystemMenu, __super::ClassWndProc);
     }
 }
 
@@ -729,43 +690,44 @@ void ClassicTileWnd::EnableLogging()
     }
 }
 
-LRESULT CALLBACK ClassicTileWnd::s_CBTProc(int code, WPARAM wp, LPARAM lp)
-{
-    LRESULT nRetVal = 0;
-    CBT_CREATEWNDW* lpCreateWndw = reinterpret_cast<CBT_CREATEWNDW*>(lp);
-
-    if ( 
-        (code == HCBT_CREATEWND)
-        && 
-        lpCreateWndw 
-        && 
-        lpCreateWndw->lpcs 
-        && 
-        lpCreateWndw->lpcs->lpCreateParams
-        ) 
-    {
-        HookStruct* pHookStruct = reinterpret_cast<HookStruct*>(lpCreateWndw->lpcs->lpCreateParams);
-        if (pHookStruct) {
-            if (pHookStruct->pThis) {
-                ::SetLastError(0);
-                if (!SetWindowLongPtrW(reinterpret_cast<HWND>(wp), GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pHookStruct->pThis))
-                    &&
-                    (::GetLastError() != 0)
-                    )
-                {
-                    nRetVal = 1;
-                }
-                pHookStruct->pThis = nullptr;
-            }
-            nRetVal = (nRetVal == 0) ? CallNextHookEx(pHookStruct->hHook, code, wp, lp) : nRetVal;
-        }
-    }
-    
-    return nRetVal;
-}
 
 bool ClassicTileWnd::Run(HINSTANCE hInst)
 {
-    static ClassicTileWnd s_classicTileWnd;
     return s_classicTileWnd.InitInstance(hInst);
+}
+
+void ClassicTileWnd::OnSettingsOpenLogFile(HWND hwnd, const std::wstring& szPath)
+{
+    try {
+        constexpr static wchar_t FMT_FILE_NOT_FOUND[] = L"Log file <{0}> does not exist yet.";
+
+        if (!CTWinUtils::FileExists(szPath)) {
+            ::MessageBoxW(hwnd, std::format(FMT_FILE_NOT_FOUND, szPath).c_str(), APP_NAME.c_str(), MB_OK | MB_ICONINFORMATION);
+        } else if (m_logViewer.GetHWND() ){
+            eval_error_nz(::ShowWindow(m_logViewer.GetHWND(), SW_RESTORE));
+            eval_error_nz(m_logViewer.SetFile(szPath));
+            eval_error_nz(::SetForegroundWindow(m_logViewer.GetHWND()));
+        }else{
+            eval_error_nz(m_logViewer.InitInstance(m_hInst, szPath));
+        }
+    } catch (const LoggingException& le) {
+        le.Log();
+    } catch (...) {
+        log_error("Unhandled exception");
+    }
+}
+
+bool ClassicTileWnd::ProcessDlgMsg(LPMSG lpMsg)
+{
+    bool bRetVal = false;
+    if (m_logViewer.GetHWND()) {
+        bRetVal = m_logViewer.ProcessDlgMsg(lpMsg);
+    }
+
+    return bRetVal;
+}
+
+bool ClassicTileWnd::CTWProcessDlgMsg(LPMSG lpMsg)
+{
+    return s_classicTileWnd.ProcessDlgMsg(lpMsg);
 }

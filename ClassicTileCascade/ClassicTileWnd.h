@@ -11,11 +11,13 @@
 // instantiates a singleton ClassicTileWnd object and calls InitInstance, which will deserialize
 // state from the registry, set up logging, and create the Shell Notification Icon. Once InitInstance returns 
 // successfully, caller should start a Windows messaging loop.
+#include "CLogViewer.h"
 
-class ClassicTileWnd
+class ClassicTileWnd : public BaseWnd< ClassicTileWnd>
 {
 public:
 	static bool Run(HINSTANCE hInst);
+	static bool CTWProcessDlgMsg(LPMSG lpMsg);
 
 protected:
 	////////////////////////////
@@ -46,17 +48,15 @@ protected:
 		File2DefaultMap
 	};
 
-	struct HookStruct
-	{
-		ClassicTileWnd* pThis;
-		HHOOK hHook;
-	};
 	
 	//////////////////
 	//Main functions
 	//////////////////
-	ClassicTileWnd() {}
-	bool InitInstance(HINSTANCE hInstance);
+	ClassicTileWnd();
+	bool BeforeWndCreate(bool bRanPrior) override;
+	bool AfterWndCreate(bool bRanPrior) override;
+	bool ProcessDlgMsg(LPMSG lpMsg) override;
+	LRESULT ClassWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 
 	ClassicTileWnd(const ClassicTileWnd&) = delete;
 	ClassicTileWnd(ClassicTileWnd&&) = delete;
@@ -71,7 +71,6 @@ protected:
 	// "Settings | Left click does" radio button submenu
 	void GetToolTip();
 	void CloseTaskDlg();
-	LRESULT CTWWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	void EnableLogging();
 
 	/////////////////////////
@@ -82,18 +81,16 @@ protected:
 	////////////////////
 	//callback functions
 	////////////////////
-	static LRESULT CALLBACK s_WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	static HRESULT CALLBACK s_TaskDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, LONG_PTR lpRefData);
 	static BOOL CALLBACK s_EnumProc(HWND hwnd, LPARAM lParam);
-	static LRESULT CALLBACK s_CBTProc(int code, WPARAM wp, LPARAM lp);
 
 	////////////////////////
 	//Top-level msg handlers
 	////////////////////////
 	void OnSWMTrayMsg(HWND hwnd, WORD wNotifEvent, WORD wIconId, int x, int y);
 	void OnCommand(HWND hwnd, int id, HWND, UINT);
-	void OnClose(HWND hwnd, bool bDestroy = true);
-	void OnDestroy(HWND, bool bQuit = true);
+	void OnClose(HWND hwnd) override;
+	void OnDestroy(HWND) override;
 	void OnInitMenuPopup(HWND hwnd, HMENU hMenu, UINT item, BOOL fSystemMenu);
 
 	//////////////////////////
@@ -109,11 +106,12 @@ protected:
 	void OnSettingsAutoStart();
 	void OnSettingsLogging(HWND hwnd);
 	void OnSettingsDefWndTile();
+	void OnSettingsOpenLogFile(HWND hwnd, const std::wstring& szPath);
 
 	//////////////////////////
 	//Task Dialog msg handlers
 	//////////////////////////
-	void OnHyperlinkClick(LPARAM lpszURL) const;
+	void OnHyperlinkClick(LPARAM lpszURL);
 
 	///////////////////////
 	//InitMenuPopupHandlers
@@ -134,10 +132,6 @@ protected:
 	//////////////////
 	//instance members
 	//////////////////
-
-	// HINSTANCE handle for use in member functions that need to access 
-	// resources, etc.
-	HINSTANCE m_hInst = nullptr;
 
 	// Structure used to create and modify the Shell Notification
 	NOTIFYICONDATA	m_niData = { 0 };
@@ -169,5 +163,9 @@ protected:
 
 	SPHMENU m_hMenu;
 	HMENU m_hPopupMenu = nullptr;
+
+	CLogViewer m_logViewer;
+
+	static ClassicTileWnd s_classicTileWnd;
 };
 
