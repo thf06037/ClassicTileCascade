@@ -67,6 +67,7 @@ protected:
 	void OnFindMsg(HWND hwnd, LPFINDREPLACEW lpfr);
 	void OnSetFocus(HWND hwnd, HWND hwndOldFocus);
 	LRESULT OnNotify(HWND hwnd, int uControl, NMHDR* lpNMHDR);
+	void OnDestroy(HWND hwnd) override;
 
 	////////////////////////
 	//WM_COMMAND handlers

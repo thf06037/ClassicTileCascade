@@ -50,18 +50,19 @@ bool CLogViewer::BeforeWndCreate(bool bRanPrior)
 {
     const static std::wstring CLASS_NAME = L"ClassicTileWndLogViewer";
 
-    m_hRtfLib = eval_fatal_nz( ::LoadLibraryW(L"Msftedit.dll") );
+    if (!bRanPrior) {
+        m_hRtfLib = eval_fatal_nz(::LoadLibraryW(L"Msftedit.dll"));
 
-    m_wcex.style = CS_HREDRAW | CS_VREDRAW;
-    m_wcex.hIcon = eval_fatal_nz(::LoadIcon(m_hInst, reinterpret_cast<LPCWSTR>(IDI_CLASSICTILECASCADE)));
-    m_wcex.hCursor = eval_fatal_nz(::LoadCursor(NULL, IDC_ARROW));
-    m_wcex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
-    m_wcex.lpszMenuName = reinterpret_cast<LPCWSTR>(IDC_LOGVIEWER);
-    m_wcex.lpszClassName = CLASS_NAME.c_str();
-    m_wcex.hIconSm = eval_fatal_nz(::LoadIcon(m_hInst, reinterpret_cast<LPCWSTR>(IDI_CLASSICTILECASCADE)));
+        m_wcex.style = CS_HREDRAW | CS_VREDRAW;
+        m_wcex.hIcon = eval_fatal_nz(::LoadIcon(m_hInst, reinterpret_cast<LPCWSTR>(IDI_CLASSICTILECASCADE)));
+        m_wcex.hCursor = eval_fatal_nz(::LoadCursor(NULL, IDC_ARROW));
+        m_wcex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
+        m_wcex.lpszMenuName = reinterpret_cast<LPCWSTR>(IDC_LOGVIEWER);
+        m_wcex.lpszClassName = CLASS_NAME.c_str();
+        m_wcex.hIconSm = eval_fatal_nz(::LoadIcon(m_hInst, reinterpret_cast<LPCWSTR>(IDI_CLASSICTILECASCADE)));
+    }
 
     m_szWinTitle = L"Classic Tile Log Viewer";
-
     m_dwStyle = WS_OVERLAPPEDWINDOW;
     m_x = CW_USEDEFAULT;
     m_nWidth = CW_USEDEFAULT;
@@ -155,7 +156,7 @@ LRESULT CLogViewer::OnNotify(HWND hwnd, int uControl, NMHDR* lpNMHDR)
 void CLogViewer::OnSelChange(HWND hwnd)
 {
     try{
-        if (m_hStatus) {
+        if (m_hStatus && ::IsWindow(m_hStatus)) {
             ITextSelectionPtr spTextSelection;
             eval_error_hr(m_spTextDoc->GetSelection(&spTextSelection));
 
@@ -289,7 +290,7 @@ void CLogViewer::OnSize(HWND hwnd, UINT state, int cx, int cy)
 {
     try {
         int iStatusHeight = 0;
-        if (m_hStatus) {
+        if (m_hStatus && ::IsWindow(m_hStatus)) {
             ::SendMessageW(m_hStatus, WM_SIZE, 0, 0);
             RECT rStatus = { 0 };
             eval_error_nz(::GetWindowRect(m_hStatus, &rStatus));
@@ -864,4 +865,27 @@ void CLogViewer::CreateDestroyStatusBar(HWND hwnd)
         m_hStatus = nullptr;
     }
     OnSize(hwnd, SIZE_RESTORED, r.right, r.bottom);
+}
+
+
+void CLogViewer::OnDestroy(HWND hwnd)
+{
+    m_hEdit = nullptr;
+    m_hStatus = nullptr;
+    m_spTextDoc.Release();
+
+    m_pFR = nullptr;
+
+    m_hDlgFind = nullptr;
+    ZeroMemory(m_lpszFindBuf, sizeof(m_lpszFindBuf));
+
+
+    m_nGotoLine = 0;
+    m_fRecursing = FALSE;
+
+    m_bLineNumbers = false;
+    m_bStatusBar = false;
+    m_uCurrDlg = 0;
+
+    __super::OnDestroy(hwnd);
 }
