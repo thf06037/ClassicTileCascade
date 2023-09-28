@@ -79,7 +79,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     while (::GetMessageW(&msg, nullptr, 0, 0) > 0)
     {
-        //if (!ClassicTileWnd::ProcessDlgMsg(&msg)) {
         if (!ClassicTileWnd::CTWProcessDlgMsg(&msg)) {
             ::TranslateMessage(&msg);
             ::DispatchMessageW(&msg);

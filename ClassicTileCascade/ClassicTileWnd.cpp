@@ -704,7 +704,9 @@ void ClassicTileWnd::OnSettingsOpenLogFile(HWND hwnd, const std::wstring& szPath
         if (!CTWinUtils::FileExists(szPath)) {
             ::MessageBoxW(hwnd, std::format(FMT_FILE_NOT_FOUND, szPath).c_str(), APP_NAME.c_str(), MB_OK | MB_ICONINFORMATION);
         } else if (m_logViewer.GetHWND() ){
-            eval_error_nz(::ShowWindow(m_logViewer.GetHWND(), SW_RESTORE));
+            if (::IsIconic(m_logViewer.GetHWND())) {
+                eval_error_nz(::ShowWindow(m_logViewer.GetHWND(), SW_RESTORE));
+            }
             eval_error_nz(m_logViewer.SetFile(szPath));
             eval_error_nz(::SetForegroundWindow(m_logViewer.GetHWND()));
         }else{
