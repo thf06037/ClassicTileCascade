@@ -180,6 +180,8 @@ void CLogViewer::OnSelChange(HWND hwnd)
             eval_error_hr(spRange->SetIndex(tomLine, nLine, 0));
             eval_error_hr(spRange->GetIndex(tomCharacter, &nLineStartChar));
 
+            double fZoom = GetZoom();
+
             if (nEnd != 0) {
                 ITextRangePtr spRangeEnd;
                 eval_error_hr(spTextSelection->GetDuplicate(&spRangeEnd));
@@ -238,6 +240,12 @@ void CLogViewer::OnSelChange(HWND hwnd)
                     }
 
                     break;
+
+                case 3:
+                    szPartName = L"Zoom";
+                    szCell = std::format( L"{0}%", std::lround(fZoom));
+                    break;
+
                 }
                 
                 std::wstring szCellValue = std::format(L"{0} = {1}", szPartName, szCell);
@@ -275,6 +283,7 @@ BOOL CLogViewer::OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct)
                                     m_hInst,
                                     nullptr));
         ::SendMessageW(m_hEdit, EM_SETEVENTMASK, 0, ENM_SELCHANGE);
+        eval_error_nz(::SetWindowSubclass(m_hEdit, s_RESubClass, 0, reinterpret_cast<DWORD_PTR>(this)));
         eval_error_nz(::SetFocus(m_hEdit));
         fRetVal = TRUE;
     } catch (const LoggingException& le) {
@@ -556,12 +565,7 @@ void CLogViewer::OnZoom(HWND hwnd, int id)
     try{
         long nNumerator = 0;
         long nDenominator = 0;
-        eval_error_nz(::SendMessage(m_hEdit, EM_GETZOOM, reinterpret_cast<WPARAM>(&nNumerator), reinterpret_cast<LPARAM>(&nDenominator)));
-
-        if (nDenominator == 0 && nNumerator == 0) {
-            nNumerator = 100;
-            nDenominator = 100;
-        }
+        GetZoom(&nNumerator, &nDenominator);
 
         nNumerator -= (nNumerator % NUMERATOR_CHANGE);
 
@@ -575,6 +579,7 @@ void CLogViewer::OnZoom(HWND hwnd, int id)
             }
         }
         eval_error_nz(::SendMessageW(m_hEdit, EM_SETZOOM, static_cast<WPARAM>(nNumerator), static_cast<LPARAM>(nDenominator)));
+        OnSelChange(hwnd);
     } catch (const LoggingException& le) {
         le.Log();
     } catch (...) {
@@ -582,6 +587,28 @@ void CLogViewer::OnZoom(HWND hwnd, int id)
     }
 
 }
+
+double CLogViewer::GetZoom(long* pnNumerator, long* pnDenominator)
+{
+    long    nNumerator = 0,
+            nDenominator = 0;
+
+    long* pnNumerator_ = pnNumerator ? pnNumerator : &nNumerator;
+    long* pnDenominator_ = pnDenominator ? pnDenominator : &nDenominator;
+
+    *pnNumerator_ = 0;
+    *pnDenominator_ = 0;
+
+    eval_error_nz(::SendMessage(m_hEdit, EM_GETZOOM, reinterpret_cast<WPARAM>(pnNumerator_), reinterpret_cast<LPARAM>(pnDenominator_)));
+
+    if (*pnDenominator_ == 0 && *pnNumerator_ == 0) {
+        *pnNumerator_ = 100;
+        *pnDenominator_ = 100;
+    }
+
+    return (static_cast<double>(*pnNumerator_) / static_cast<double>(*pnDenominator_)) * 100.0;
+}
+
 
 void CLogViewer::OnSetFocus(HWND, HWND)
 {
@@ -602,7 +629,7 @@ void CLogViewer::OnInitZoomMenu(HMENU hMenu)
     try{
         long nNumerator = 0;
         long nDenominator = 0;
-        eval_error_nz(::SendMessage(m_hEdit, EM_GETZOOM, reinterpret_cast<WPARAM>(&nNumerator), reinterpret_cast<LPARAM>(&nDenominator)));
+        GetZoom(&nNumerator, &nDenominator);
 
         ::EnableMenuItem(hMenu, ID_ZOOM_ZOOMIN, MF_BYCOMMAND | ((nNumerator < MAX_NUMERATOR) ? MF_ENABLED : MF_DISABLED));
         ::EnableMenuItem(hMenu, ID_ZOOM_ZOOMOUT, MF_BYCOMMAND | ((nNumerator > MIN_NUMERATOR) ? MF_ENABLED : MF_DISABLED));
@@ -641,13 +668,6 @@ void CLogViewer::OnGoto(HWND hwnd)
             long nCount = 0;
             eval_error_hr(spRange->GetIndex(tomLine, &nCount));
             if (m_nGotoLine > 0 && m_nGotoLine <= nCount) {
-                long nBeforeLine = 0, nAfterLine = 0;
-                eval_error_hr(spTextSelection->GetIndex(tomLine, &nBeforeLine));
-                eval_error_hr(spTextSelection->MoveLeft(tomCharacter, 1, tomMove, nullptr));
-                eval_error_hr(spTextSelection->GetIndex(tomLine, &nAfterLine));
-                if (nBeforeLine != nAfterLine) {
-                    eval_error_hr(spTextSelection->MoveRight(tomCharacter, 1, tomMove, nullptr));
-                }
                 eval_error_hr(spTextSelection->SetIndex(tomLine, m_nGotoLine, 0));
             } else {
                 eval_error_nz(::MessageBoxW(hwnd, L"The line number is beyond the total number of lines", m_szWinTitle.c_str(), MB_OK | MB_ICONWARNING | MB_APPLMODAL));
@@ -888,4 +908,24 @@ void CLogViewer::OnDestroy(HWND hwnd)
     m_uCurrDlg = 0;
 
     __super::OnDestroy(hwnd);
+}
+
+LRESULT CALLBACK CLogViewer::s_RESubClass(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+    LRESULT nRetVal = ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
+
+    switch (uMsg) {
+    case WM_MOUSEWHEEL:
+        if ((GET_KEYSTATE_WPARAM(wParam) & MK_CONTROL) == MK_CONTROL) {
+            CLogViewer* pThis = reinterpret_cast<CLogViewer*>(dwRefData);
+            pThis->OnSelChange(pThis->m_hWnd);
+        }
+        break;
+
+    case WM_NCDESTROY:
+        ::RemoveWindowSubclass(hWnd, s_RESubClass, 0);
+        break;
+    }
+
+    return nRetVal;
 }

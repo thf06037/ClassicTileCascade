@@ -33,7 +33,6 @@ protected:
 	_COM_SMARTPTR_TYPEDEF(ITextDocument, __uuidof(ITextDocument));
 	_COM_SMARTPTR_TYPEDEF(ITextSelection, __uuidof(ITextSelection));
 	_COM_SMARTPTR_TYPEDEF(ITextRange, __uuidof(ITextRange));
-	_COM_SMARTPTR_TYPEDEF(ITextPara, __uuidof(ITextPara));
 
 	////////////////////
 	//BaseWnd overrides
@@ -46,6 +45,7 @@ protected:
 	//Callbacks
 	////////////////////
 	static INT_PTR CALLBACK s_DlgFunc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+	static LRESULT CALLBACK s_RESubClass(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 
 	////////////////////
 	//Helper functions
@@ -56,6 +56,7 @@ protected:
 	INT_PTR DoModal(HWND hwnd, UINT uResource);
 	LRESULT LVDefDlgProcEx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	void CreateDestroyStatusBar(HWND hwnd);
+	double GetZoom(long* pnNumerator = nullptr, long* pnDenominator = nullptr);
 
 	////////////////////////
 	//Top-level msg handlers
@@ -115,7 +116,7 @@ protected:
 	//////////////////
 	constexpr static UINT MIN_NUMERATOR = 10;
 	constexpr static UINT MAX_NUMERATOR = 500;
-	constexpr static UINT STATUS_PARTS = 3;
+	constexpr static UINT STATUS_PARTS = 4;
 
 	//////////////////
 	//instance members
