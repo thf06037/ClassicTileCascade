@@ -577,8 +577,7 @@ ClassicTileWnd::File2DefaultStruct::File2DefaultStruct(UINT uDefault_, UINT uFil
      uFile(uFile_)
 {
     try {
-        SPHMENU hMenu;
-        hMenu.reset(eval_error_nz(::LoadMenuW(::GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDR_MENUPOPUP))));
+        SPHMENU hMenu(eval_error_nz(::LoadMenuW(::GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDR_MENUPOPUP))));
 
         HMENU hPopupMenu = eval_error_nz(::GetSubMenu(hMenu.get(), 0));
 

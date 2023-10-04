@@ -92,8 +92,7 @@ bool CTWinUtils::ShellExecInExplorerProcess(const std::wstring& szFile, const st
             DWORD dwPID;
             eval_error_nz(GetWindowThreadProcessId(hWnd, &dwPID));
 
-            SPHANDLE_EX hShellProcess;
-            hShellProcess.reset(eval_error_nz(::OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, dwPID)));
+            SPHANDLE_EX hShellProcess(eval_error_nz(::OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, dwPID)) );
 
             SPHANDLE_EX hShellProcessToken;
             eval_error_nz(::OpenProcessToken(hShellProcess.get(), TOKEN_DUPLICATE, std::out_ptr(hShellProcessToken)));

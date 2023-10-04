@@ -20,6 +20,7 @@
  * IN THE SOFTWARE.
  */
 
+
 #include "pch.h"
 #include "resource.h"
 #include "MemMgmt.h"
@@ -51,7 +52,7 @@ bool CLogViewer::BeforeWndCreate(bool bRanPrior)
     const static std::wstring CLASS_NAME = L"ClassicTileWndLogViewer";
 
     if (!bRanPrior) {
-        m_hRtfLib = eval_fatal_nz(::LoadLibraryW(L"Msftedit.dll"));
+        const static SPHMODULE hRtfLib ( eval_fatal_nz(::LoadLibraryW(L"Msftedit.dll")) );
 
         m_wcex.style = CS_HREDRAW | CS_VREDRAW;
         m_wcex.hIcon = eval_fatal_nz(::LoadIcon(m_hInst, reinterpret_cast<LPCWSTR>(IDI_CLASSICTILECASCADE)));
@@ -81,7 +82,7 @@ bool CLogViewer::AfterWndCreate(bool bRanPrior)
     ::ShowWindow(m_hWnd, SW_SHOWNORMAL);
 
     IRichEditOlePtr spRichEditOle;
-    eval_fatal_nz(::SendMessage(m_hEdit, EM_GETOLEINTERFACE, 0, reinterpret_cast<LPARAM>(&spRichEditOle)));
+    eval_fatal_nz(::SendMessageW(m_hEdit, EM_GETOLEINTERFACE, 0, reinterpret_cast<LPARAM>(&spRichEditOle)));
     eval_fatal_hr( (m_spTextDoc = spRichEditOle) ? S_OK : E_NOINTERFACE);
 
     OpenFile();
@@ -97,16 +98,27 @@ bool CLogViewer::AfterWndCreate(bool bRanPrior)
 
 bool CLogViewer::OpenFile()
 {
-    _variant_t varFile(m_szFilePath.c_str());
+    bool bRetVal = false;
+    
+    try {
+        _variant_t varFile(m_szFilePath.c_str());
 
-    eval_fatal_hr(m_spTextDoc->Open(&varFile, tomReadOnly | tomOpenExisting | tomText, 0));
+        eval_fatal_hr(m_spTextDoc->Open(&varFile, tomReadOnly | tomOpenExisting | tomText, 0));
 
-    ITextSelectionPtr spTextSelection;
-    eval_fatal_hr(m_spTextDoc->GetSelection(&spTextSelection));
-    eval_fatal_hr(spTextSelection->EndKey(tomStory, tomMove, nullptr));
+        SetLineNumbers(m_hWnd);
 
-    return true;
+        ITextSelectionPtr spTextSelection;
+        eval_fatal_hr(m_spTextDoc->GetSelection(&spTextSelection));
+        eval_fatal_hr(spTextSelection->EndKey(tomStory, tomMove, nullptr));
 
+        bRetVal = true;
+    } catch (const LoggingException& le) {
+        le.Log();
+    } catch (...) {
+        log_error("Unhandled exception");
+    }
+    
+    return bRetVal;
 }
 
 LRESULT CLogViewer::ClassWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -508,15 +520,16 @@ void CLogViewer::FindString(LPFINDREPLACEW lpfr)
 void CLogViewer::OnFind(HWND hwnd)
 {
     static FINDREPLACEW fr = { 0 };
+    static wchar_t lpszFindBuf[160] = { 0 };
 
     try{
         ::ZeroMemory(&fr, sizeof(FINDREPLACEW));
-        ::ZeroMemory(m_lpszFindBuf, sizeof(m_lpszFindBuf));
+        ::ZeroMemory(lpszFindBuf, sizeof(lpszFindBuf));
 
         fr.lStructSize = sizeof(FINDREPLACEW);
         fr.hwndOwner = hwnd;
-        fr.lpstrFindWhat = m_lpszFindBuf;
-        fr.wFindWhatLen = sizeof(m_lpszFindBuf);
+        fr.lpstrFindWhat = lpszFindBuf;
+        fr.wFindWhatLen = sizeof(lpszFindBuf);
 
         m_hDlgFind = eval_error_nz (::FindTextW(&fr));
     } catch (const LoggingException& le) {
@@ -599,7 +612,7 @@ double CLogViewer::GetZoom(long* pnNumerator, long* pnDenominator)
     *pnNumerator_ = 0;
     *pnDenominator_ = 0;
 
-    eval_error_nz(::SendMessage(m_hEdit, EM_GETZOOM, reinterpret_cast<WPARAM>(pnNumerator_), reinterpret_cast<LPARAM>(pnDenominator_)));
+    eval_error_nz(::SendMessageW(m_hEdit, EM_GETZOOM, reinterpret_cast<WPARAM>(pnNumerator_), reinterpret_cast<LPARAM>(pnDenominator_)));
 
     if (*pnDenominator_ == 0 && *pnNumerator_ == 0) {
         *pnNumerator_ = 100;
@@ -659,15 +672,28 @@ void CLogViewer::OnGoto(HWND hwnd)
     try {
         ITextSelectionPtr spTextSelection;
         eval_error_hr(m_spTextDoc->GetSelection(&spTextSelection));
-        eval_error_hr(spTextSelection->GetIndex(tomLine, &m_nGotoLine));
-        
+
+        long nCurrLine = 0;
+        eval_error_hr(spTextSelection->GetIndex(tomLine, &nCurrLine));
+
+        m_nGotoLine = nCurrLine;
+
         if (DoModal(hwnd, IDD_GOTO) ) {
             ITextRangePtr spRange;
             eval_error_hr(m_spTextDoc->Range(0, 0, &spRange));
             eval_error_hr(spRange->MoveStart(tomStory, 1, nullptr));
+
             long nCount = 0;
             eval_error_hr(spRange->GetIndex(tomLine, &nCount));
             if (m_nGotoLine > 0 && m_nGotoLine <= nCount) {
+                eval_error_hr(spTextSelection->GetDuplicate(&spRange));
+                eval_error_hr(spRange->Move(tomCharacter, -1, nullptr));
+                long nNewLine = 0;
+                eval_error_hr(spRange->GetIndex(tomLine, &nNewLine));
+                if (nNewLine == nCurrLine) {
+                    eval_error_hr(spTextSelection->HomeKey(tomLine, tomMove, nullptr));
+                }
+
                 eval_error_hr(spTextSelection->SetIndex(tomLine, m_nGotoLine, 0));
             } else {
                 eval_error_nz(::MessageBoxW(hwnd, L"The line number is beyond the total number of lines", m_szWinTitle.c_str(), MB_OK | MB_ICONWARNING | MB_APPLMODAL));
@@ -801,26 +827,8 @@ void CLogViewer::OnLineNumbers(HWND hwnd)
 {
     try{
         m_bLineNumbers = !m_bLineNumbers;
-        ITextSelectionPtr spTextSelection;
-        eval_error_hr(m_spTextDoc->GetSelection(&spTextSelection));
-        
-        long nStart = 0, nEnd = 0;
-        eval_error_hr(spTextSelection->GetStart(&nStart));
-        eval_error_hr(spTextSelection->GetEnd(&nEnd));
 
-        OnSetSel(hwnd);
-
-        PARAFORMAT2 pf = { 0 };
-        pf.cbSize = sizeof(pf);
-        pf.dwMask = PFM_NUMBERING | PFM_NUMBERINGSTYLE | PFM_NUMBERINGSTART;
-        pf.wNumbering = m_bLineNumbers ? PFN_ARABIC : 0;
-        pf.wNumberingStyle = m_bLineNumbers ? PFNS_PERIOD : 0;
-        pf.wNumberingStart = m_bLineNumbers ? 1 : 0;
-
-        eval_error_nz(::SendMessageW(m_hEdit, EM_SETPARAFORMAT, 0, reinterpret_cast<LPARAM>(&pf)));
-
-        eval_error_hr(spTextSelection->SetStart(nStart));
-        eval_error_hr(spTextSelection->SetEnd(nEnd));
+        SetLineNumbers(hwnd);
     } catch (const LoggingException& le) {
         le.Log();
     } catch (...) {
@@ -829,6 +837,31 @@ void CLogViewer::OnLineNumbers(HWND hwnd)
 
 }
 
+void CLogViewer::SetLineNumbers(HWND hwnd)
+{
+    ITextSelectionPtr spTextSelection;
+    eval_error_hr(m_spTextDoc->GetSelection(&spTextSelection));
+
+    long nStart = 0, nEnd = 0;
+    eval_error_hr(spTextSelection->GetStart(&nStart));
+    eval_error_hr(spTextSelection->GetEnd(&nEnd));
+
+    OnSetSel(hwnd);
+
+    PARAFORMAT2 pf = { 0 };
+    pf.cbSize = sizeof(pf);
+    pf.dwMask = PFM_NUMBERING | PFM_NUMBERINGSTYLE | PFM_NUMBERINGSTART;
+    if (m_bLineNumbers) {
+        pf.wNumbering = PFN_ARABIC;
+        pf.wNumberingStyle = PFNS_PERIOD;
+        pf.wNumberingStart = 1;
+    }
+
+    eval_error_nz(::SendMessageW(m_hEdit, EM_SETPARAFORMAT, 0, reinterpret_cast<LPARAM>(&pf)));
+
+    eval_error_hr(spTextSelection->SetStart(nStart));
+    eval_error_hr(spTextSelection->SetEnd(nEnd));
+}
 
 void CLogViewer::OnStatusBar(HWND hwnd)
 {
@@ -897,8 +930,6 @@ void CLogViewer::OnDestroy(HWND hwnd)
     m_pFR = nullptr;
 
     m_hDlgFind = nullptr;
-    ZeroMemory(m_lpszFindBuf, sizeof(m_lpszFindBuf));
-
 
     m_nGotoLine = 0;
     m_fRecursing = FALSE;

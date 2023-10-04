@@ -78,6 +78,16 @@ struct HANDLE_deleter {
     using pointer = HANDLE;
 };
 
+struct HMODULE_deleter {
+    void operator()(HMODULE hModule)
+    {
+        if (hModule) {
+            ::FreeLibrary(hModule);
+        }
+    }
+
+    using pointer = HMODULE;
+};
 
 // Type definitions of various smart pointers for use with Win32 object types
 using SPHKEY = std::unique_ptr<HKEY, HKEY_deleter>;
@@ -86,6 +96,7 @@ using SPHWND = std::unique_ptr<HWND, HWND_deleter>;
 using SPHICON = std::unique_ptr<HICON, HICON_deleter>;
 using SPFILE = std::unique_ptr<FILE, FILE_deleter>;
 using SPHANDLE_EX = std::unique_ptr<HANDLE, HANDLE_deleter>;
+using SPHMODULE = std::unique_ptr<HMODULE, HMODULE_deleter>;
 
 // Utility class (CCoInitialize) for automatically calling CoInitialize and 
 // CoUnitialize at entry/exit of scope

@@ -13,8 +13,8 @@
 class CLogViewer : public BaseWnd<CLogViewer>
 {
 public:
-	//CLogViewer(const std::wstring& szFilePath, bool bMainWnd = false);
 	CLogViewer(bool bMainWnd = false);
+
 	bool InitInstance(HINSTANCE hInstance, const std::wstring& szFilePath);
 	bool ProcessDlgMsg(LPMSG lpMsg) override;
 	bool SetFile(const std::wstring& szFilePath);
@@ -57,6 +57,7 @@ protected:
 	LRESULT LVDefDlgProcEx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	void CreateDestroyStatusBar(HWND hwnd);
 	double GetZoom(long* pnNumerator = nullptr, long* pnDenominator = nullptr);
+	void SetLineNumbers(HWND hwnd);
 
 	////////////////////////
 	//Top-level msg handlers
@@ -126,15 +127,11 @@ protected:
 	HWND m_hEdit = nullptr;
 	HWND m_hStatus = nullptr;
 
-	HMODULE m_hRtfLib = nullptr;
-	
 	ITextDocumentPtr m_spTextDoc;
 
 	LPFINDREPLACEW m_pFR = nullptr;
 
 	HWND m_hDlgFind = nullptr;
-	wchar_t m_lpszFindBuf[160] = { 0 };
-
 
 	long m_nGotoLine = 0;
 	BOOL m_fRecursing = FALSE;
