@@ -31,7 +31,6 @@
 #include "CLogViewer.h"
 
 
-
 CLogViewer::CLogViewer(bool bMainWnd)
 	:   BaseWnd(bMainWnd){}
 
@@ -155,7 +154,7 @@ LRESULT CLogViewer::OnNotify(HWND hwnd, int uControl, NMHDR* lpNMHDR)
         if ((lpNMHDR->idFrom == IDC_LOGEDIT) && (lpNMHDR->code == EN_SELCHANGE)) {
             OnSelChange(hwnd);
         } else {
-            FORWARD_WM_NOTIFY(hwnd, uControl, lpNMHDR, DefWindowProcW);
+            FORWARD_WM_NOTIFY(hwnd, uControl, lpNMHDR, __super::ClassWndProc);
         }
     } catch (const LoggingException& le) {
         le.Log();
@@ -211,49 +210,47 @@ void CLogViewer::OnSelChange(HWND hwnd)
                 nCharOnLine = 1;
             }
 
+            std::wstring szPartName;
+            std::wstring szCell;
+
+            auto FormatSection = [&szPartName, &szCell](LPCWSTR lpszPartName, 
+                                                        long nStart, 
+                                                        long nEnd, 
+                                                        const long* const pnStartDisp = nullptr, 
+                                                        const long* const pnEndDisp = nullptr)
+            {
+                szPartName = lpszPartName;
+
+                long nStartDisp = pnStartDisp ? *pnStartDisp : nStart;
+                long nEndDisp = pnEndDisp ? *pnEndDisp : nEnd;
+
+                if (nStart == nEnd) {
+                    szCell = std::to_wstring(nStartDisp);
+                } else if (nEnd < nStart) {
+                    szCell = std::format(L"{0},{1}", nEndDisp, nStartDisp);
+                } else {
+                    szCell = std::format(L"{0}-{1}", nStartDisp, nEndDisp);
+                }
+            };
+
             for (UINT i = 0; i < STATUS_PARTS; i++) {
-                std::wstring szPartName;
-                std::wstring szCell;
-                switch (i) {
-                case 0:
-                    szPartName = L"Line";
+                szPartName.clear();
+                szCell.clear();
 
-                    if (nLine == nLineEnd) {
-                        szCell = std::to_wstring(nLine);
-                    } else if ( nLineEnd < nLine) {
-                        szCell = std::format(L"{0},{1}", nLineEnd, nLine);
-                    } else {
-                        szCell = std::format(L"{0}-{1}", nLine, nLineEnd);
-                    }
-
+                switch (static_cast<StatSection>(i)) {
+                case StatSection::LINE:
+                    FormatSection(L"Line", nLine, nLineEnd);
                     break;
 
-                case 1:
-                    szPartName = L"Character";
-
-                    if (nChar == nCharEnd) {
-                        szCell = std::to_wstring(nChar);
-                    } else if (nCharEnd < nChar) {
-                        szCell = std::format(L"{0},{1}", nCharEnd, nChar);
-                    } else {
-                        szCell = std::format(L"{0}-{1}", nChar, nCharEnd);
-                    }
-
+                case StatSection::CHARACTER:
+                    FormatSection(L"Character", nChar, nCharEnd);
                     break;
 
-                case 2:
-                    szPartName = L"Line:Character";
-                    if (nChar == nCharEnd) {
-                        szCell = std::format(L"{0}:{1}", nLine, nCharOnLine);
-                    } else if (nCharEnd < nChar) {
-                        szCell = std::format(L"{0}:{1},{2}:{3}", nLineEnd, nCharOnLineEnd, nLine, nCharOnLine);
-                    } else {
-                        szCell = std::format(L"{0}:{1}-{2}:{3}", nLine, nCharOnLine, nLineEnd, nCharOnLineEnd);
-                    }
-
+                case StatSection::LINE_CHARACTER:
+                    FormatSection(L"Line-Character", nChar, nCharEnd, &nCharOnLine, &nCharOnLineEnd);
                     break;
 
-                case 3:
+                case StatSection::ZOOM:
                     szPartName = L"Zoom";
                     szCell = std::format( L"{0}%", std::lround(fZoom));
                     break;
@@ -264,6 +261,7 @@ void CLogViewer::OnSelChange(HWND hwnd)
                 eval_error_nz(::SendMessageW(m_hStatus, SB_SETTEXTW, i, reinterpret_cast<LPARAM>(szCellValue.data())));
             }
         }
+
     } catch (const LoggingException& le) {
         le.Log();
     } catch (...) {
@@ -374,7 +372,7 @@ void CLogViewer::OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         break;
 
     default:
-        FORWARD_WM_COMMAND(hwnd, id, hwndCtl, codeNotify, DefWindowProcW);
+        FORWARD_WM_COMMAND(hwnd, id, hwndCtl, codeNotify, __super::ClassWndProc);
         break;
     }
 
@@ -458,7 +456,7 @@ void CLogViewer::OnInitMenuPopup(HWND hWnd, HMENU hMenu, UINT item, BOOL fSystem
     }
 
     if (!bHandled) {
-        FORWARD_WM_INITMENUPOPUP(hWnd, hMenu, item, fSystemMenu, DefWindowProcW);
+        FORWARD_WM_INITMENUPOPUP(hWnd, hMenu, item, fSystemMenu, __super::ClassWndProc);
     }
 }
 
@@ -530,6 +528,7 @@ void CLogViewer::OnFind(HWND hwnd)
         fr.hwndOwner = hwnd;
         fr.lpstrFindWhat = lpszFindBuf;
         fr.wFindWhatLen = sizeof(lpszFindBuf);
+        fr.Flags = FR_DOWN;
 
         m_hDlgFind = eval_error_nz (::FindTextW(&fr));
     } catch (const LoggingException& le) {
@@ -899,15 +898,15 @@ void CLogViewer::CreateDestroyStatusBar(HWND hwnd)
 
         int nWidth = r.right / STATUS_PARTS;
         int rightEdge = nWidth;
-
-        std::vector<int> vParts(STATUS_PARTS);
+        
+        int vParts[STATUS_PARTS] = { 0 };
         for (int i = 0; i < STATUS_PARTS; i++) {
             vParts[i] = rightEdge;
             rightEdge += nWidth;
         }
 
         WPARAM wStatusParts = STATUS_PARTS;
-        eval_error_nz(::SendMessageW(m_hStatus, SB_SETPARTS, wStatusParts, reinterpret_cast<LPARAM>(vParts.data())));
+        eval_error_nz(::SendMessageW(m_hStatus, SB_SETPARTS, wStatusParts, reinterpret_cast<LPARAM>(vParts)));
 
         ::SendMessageW(m_hStatus, WM_SIZE, 0, 0);
 

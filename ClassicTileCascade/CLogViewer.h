@@ -112,12 +112,22 @@ protected:
 	/////////////////////////////////////////////
 	void GotoOnButtonGo(HWND hwnd);
 
+
 	//////////////////
 	//static members
 	//////////////////
+	enum class StatSection : UINT
+	{
+		LINE,
+		LINE_CHARACTER,
+		CHARACTER,
+		ZOOM
+	};
+	constexpr static UINT STATUS_PARTS = static_cast<UINT>(StatSection::ZOOM) + 1;
+
 	constexpr static UINT MIN_NUMERATOR = 10;
 	constexpr static UINT MAX_NUMERATOR = 500;
-	constexpr static UINT STATUS_PARTS = 4;
+
 
 	//////////////////
 	//instance members
