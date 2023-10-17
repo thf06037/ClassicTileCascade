@@ -21,30 +21,30 @@ namespace CTWinUtils
 
 	// Check whether user is running at escalated privilege level (admin) and start another process as non-admin user.
 	// If user is not running as admin, simply start the process as current user
-	bool ShellExecInExplorerProcess(const std::wstring& szFile, const std::wstring& szArgs = L"", LPDWORD pDWProcID = nullptr);
+	bool ShellExecInExplorerProcess(std::wstring_view szFile, std::wstring_view szArgs = L"", LPDWORD pDWProcID = nullptr);
 	
 	// File/path manipulation routines
 	// Wrapper for GetModuleFileNameW
 	DWORD GetCurrModuleFileName(std::wstring& szCurrModFileName);
 
 	// Wrapper for PathCombine. Works for both wstring and string
-	template<class T>
-	bool PathCombineEx(T& szDest, const T& szDir, const T& szFile);
+	template<class T, class TV>
+	bool PathCombineEx(T& szDest, TV szDir, TV szFile);
 
 	// String conversion routines
 	void Wstring2string(std::string& szString, const std::wstring& szWString);
 	void String2wstring(std::wstring& szWString, const std::string& szString);
 	
 	// Wrapper for CreateProcess
-	bool CreateProcessHelper(const std::wstring& szCommand, const std::wstring& szArguments = L"", LPDWORD lpdwProcId = nullptr, int nShowWindow = -1);
+	bool CreateProcessHelper(std::wstring_view szCommand, std::wstring_view szArguments = L"", LPDWORD lpdwProcId = nullptr, const std::optional<int>& nShowWindow = {});
 
 
 	bool PathQuoteSpacesW(std::wstring& szPath);
 
 	// checks that file exists and is not a directory
-	bool FileExists(const std::wstring& szPath);
+	bool FileExists(std::wstring_view szPath);
 
 	// Opens a text file using the default app based on app extension. If file type does not 
 	// have a default, fallback to use notepad.exe
-	void OpenTextFile(HWND hwnd, const std::wstring& szPath, const std::wstring& szAppName);
+	void OpenTextFile(HWND hwnd, std::wstring_view szPath, std::wstring_view szAppName);
 }

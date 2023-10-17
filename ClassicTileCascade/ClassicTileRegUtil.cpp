@@ -25,50 +25,51 @@
 #include "ClassicTileRegUtil.h"
 
 //helper functions
-LONG OpenOrCreateRegKey(const std::wstring& szPath, bool bCreate, SPHKEY& hKey);
-LONG GetDWORDRegValue(const std::wstring& szPath, const std::wstring& szValueName, DWORD& dwValue);
-LONG SetDWORDRegValue(const std::wstring& szPath, const std::wstring& szValueName, DWORD dwValue, bool bCreate);
-LONG GetBoolRegValue(const std::wstring& szPath, const std::wstring& szValueName, bool& bValue);
-LONG SetBoolRegValue(const std::wstring& szPath, const std::wstring& szValueName, bool bValue, bool bCreate);
+LONG OpenOrCreateRegKey(std::wstring_view szPath, bool bCreate, SPHKEY& hKey);
+LONG GetDWORDRegValue(std::wstring_view szPath, std::wstring_view szValueName, DWORD& dwValue);
+LONG SetDWORDRegValue(std::wstring_view szPath, std::wstring_view szValueName, DWORD dwValue, bool bCreate);
+LONG GetBoolRegValue(std::wstring_view szPath, std::wstring_view szValueName, bool& bValue);
+LONG SetBoolRegValue(std::wstring_view szPath, std::wstring_view szValueName, bool bValue, bool bCreate);
 
 //Registry paths and value names
-const static std::wstring REG_KEY_PATH = L"Software\\thf\\ClassicTileCascade";
-const static std::wstring REG_KEY_PARENT_PATH = L"Software\\thf";
-const static std::wstring REG_LEFT_CLICK_VAL = L"LeftClickAction";
-const static std::wstring REG_RUN_PATH = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-const static std::wstring REG_RUN_NAME = L"ClassicTileCascade";
-const static std::wstring REG_LOGGING_VAL = L"Logging";
-const static std::wstring REG_DEFWNDTILE_VAL = L"DefWndTile";
-const static std::wstring REG_STATUSBAR_VAL = L"StatusBar";
+constexpr static std::wstring_view REG_KEY_PATH = L"Software\\thf\\ClassicTileCascade";
+constexpr static std::wstring_view REG_KEY_PARENT_PATH = L"Software\\thf";
+constexpr static std::wstring_view REG_LEFT_CLICK_VAL = L"LeftClickAction";
+constexpr static std::wstring_view REG_RUN_PATH = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+constexpr static std::wstring_view REG_RUN_NAME = L"ClassicTileCascade";
+constexpr static std::wstring_view REG_LOGGING_VAL = L"Logging";
+constexpr static std::wstring_view REG_DEFWNDTILE_VAL = L"DefWndTile";
+constexpr static std::wstring_view REG_STATUSBAR_VAL = L"StatusBar";
 
 
-LONG OpenOrCreateRegKey(const std::wstring& szPath, bool bCreate, SPHKEY& hKey)
+//LONG OpenOrCreateRegKey(const std::wstring& szPath, bool bCreate, SPHKEY& hKey)
+LONG OpenOrCreateRegKey(std::wstring_view szPath, bool bCreate, SPHKEY& hKey)
 {
     return  bCreate
             ?
-            ::RegCreateKeyExW(HKEY_CURRENT_USER, szPath.c_str(), 0, nullptr, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, nullptr, std::out_ptr(hKey), nullptr)
+            ::RegCreateKeyExW(HKEY_CURRENT_USER, szPath.data(), 0, nullptr, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, nullptr, std::out_ptr(hKey), nullptr)
             :
-            ::RegOpenKeyExW(HKEY_CURRENT_USER, szPath.c_str(), 0, KEY_ALL_ACCESS, std::out_ptr(hKey));
+            ::RegOpenKeyExW(HKEY_CURRENT_USER, szPath.data(), 0, KEY_ALL_ACCESS, std::out_ptr(hKey));
 }
 
-LONG GetDWORDRegValue(const std::wstring& szPath, const std::wstring& szValueName, DWORD& dwValue)
+LONG GetDWORDRegValue(std::wstring_view szPath, std::wstring_view szValueName, DWORD& dwValue)
 {
     DWORD dwSize = sizeof(dwValue);
-    return ::RegGetValueW(HKEY_CURRENT_USER, szPath.c_str(), szValueName.c_str(), RRF_RT_DWORD, nullptr, &dwValue, &dwSize);
+    return ::RegGetValueW(HKEY_CURRENT_USER, szPath.data(), szValueName.data(), RRF_RT_DWORD, nullptr, &dwValue, &dwSize);
 }
 
-LONG SetDWORDRegValue(const std::wstring& szPath, const std::wstring& szValueName, DWORD dwValue, bool bCreate)
+LONG SetDWORDRegValue(std::wstring_view szPath, std::wstring_view szValueName, DWORD dwValue, bool bCreate)
 {
     SPHKEY hKey;
     LONG lReturnValue = OpenOrCreateRegKey(szPath, bCreate, hKey);
 
     if (lReturnValue == ERROR_SUCCESS) {
-        lReturnValue = ::RegSetValueExW(hKey.get(), szValueName.c_str(), 0, REG_DWORD, reinterpret_cast<LPBYTE>(&dwValue), sizeof(dwValue));
+        lReturnValue = ::RegSetValueExW(hKey.get(), szValueName.data(), 0, REG_DWORD, reinterpret_cast<LPBYTE>(&dwValue), sizeof(dwValue));
     }
     return lReturnValue;
 }
 
-LONG GetBoolRegValue(const std::wstring& szPath, const std::wstring& szValueName, bool& bValue)
+LONG GetBoolRegValue(std::wstring_view szPath, std::wstring_view szValueName, bool& bValue)
 {
     bValue = false;
     DWORD dwValue = 0;
@@ -80,7 +81,7 @@ LONG GetBoolRegValue(const std::wstring& szPath, const std::wstring& szValueName
     return lReturnValue;
 }
 
-LONG SetBoolRegValue(const std::wstring& szPath, const std::wstring& szValueName, bool bValue, bool bCreate)
+LONG SetBoolRegValue(std::wstring_view szPath, std::wstring_view szValueName, bool bValue, bool bCreate)
 {
     return SetDWORDRegValue(szPath, szValueName, bValue ? 1 : 0, bCreate);
 }
@@ -90,17 +91,17 @@ LONG ClassicTileRegUtil::CheckRegAppPath()
 {
     SPHKEY hKey;
 
-    return OpenOrCreateRegKey(REG_KEY_PATH.c_str(), false, hKey);
+    return OpenOrCreateRegKey(REG_KEY_PATH.data(), false, hKey);
 }
 
 // Delete the main registry app path. The parent path ("Software\\thf") is the direct decendent of HKCU\Software.
 // If the parent path has no child keys or values, delete it too.
 LONG ClassicTileRegUtil::DeleteRegAppPath()
 {
-    LONG lResult = ::RegDeleteKeyW(HKEY_CURRENT_USER, REG_KEY_PATH.c_str());
+    LONG lResult = ::RegDeleteKeyW(HKEY_CURRENT_USER, REG_KEY_PATH.data());
     if (lResult == ERROR_SUCCESS) {
         SPHKEY hKey;
-        lResult = ::RegOpenKeyExW(HKEY_CURRENT_USER, REG_KEY_PARENT_PATH.c_str(), 0, KEY_QUERY_VALUE, std::out_ptr(hKey));
+        lResult = ::RegOpenKeyExW(HKEY_CURRENT_USER, REG_KEY_PARENT_PATH.data(), 0, KEY_QUERY_VALUE, std::out_ptr(hKey));
         if (lResult == ERROR_SUCCESS) {
             DWORD cSubKeys = 0;
             DWORD cValues = 0;
@@ -108,7 +109,7 @@ LONG ClassicTileRegUtil::DeleteRegAppPath()
             lResult = ::RegQueryInfoKeyW(hKey.get(), nullptr, nullptr, nullptr, &cSubKeys, nullptr, nullptr, &cValues, nullptr, nullptr, nullptr, nullptr);
 
             if ((cSubKeys == 0) && (cValues == 0)) {
-                lResult = ::RegDeleteKeyW(HKEY_CURRENT_USER, REG_KEY_PARENT_PATH.c_str());
+                lResult = ::RegDeleteKeyW(HKEY_CURRENT_USER, REG_KEY_PARENT_PATH.data());
             }
         }
     }
@@ -137,7 +138,7 @@ LONG ClassicTileRegUtil::SetRegLogging(bool bLogging)
 
 LONG ClassicTileRegUtil::CheckRegRun()
 {
-    return ::RegGetValueW(HKEY_CURRENT_USER, REG_RUN_PATH.c_str(), REG_RUN_NAME.c_str(), RRF_RT_REG_SZ, nullptr, nullptr, nullptr);
+    return ::RegGetValueW(HKEY_CURRENT_USER, REG_RUN_PATH.data(), REG_RUN_NAME.data(), RRF_RT_REG_SZ, nullptr, nullptr, nullptr);
 }
 
 LONG ClassicTileRegUtil::SetRegRun()
@@ -147,7 +148,7 @@ LONG ClassicTileRegUtil::SetRegRun()
     if (lReturnValue == ERROR_SUCCESS) {
         std::wstring szExePath;
         DWORD dwExePathLen = CTWinUtils::GetCurrModuleFileName(szExePath);
-        lReturnValue = ::RegSetValueExW(hKey.get(), REG_RUN_NAME.c_str(), 0, REG_SZ, reinterpret_cast<LPBYTE>(szExePath.data()), dwExePathLen * sizeof(wchar_t));
+        lReturnValue = ::RegSetValueExW(hKey.get(), REG_RUN_NAME.data(), 0, REG_SZ, reinterpret_cast<LPBYTE>(szExePath.data()), dwExePathLen * sizeof(wchar_t));
     }
     return lReturnValue;
 }
@@ -157,7 +158,7 @@ LONG ClassicTileRegUtil::DeleteRegRun()
     SPHKEY hKey;
     LONG lReturnValue = OpenOrCreateRegKey(REG_RUN_PATH, false, hKey);
     if (lReturnValue == ERROR_SUCCESS) {
-        lReturnValue = ::RegDeleteValueW(hKey.get(), REG_RUN_NAME.c_str());
+        lReturnValue = ::RegDeleteValueW(hKey.get(), REG_RUN_NAME.data());
     }
     return lReturnValue;
 }

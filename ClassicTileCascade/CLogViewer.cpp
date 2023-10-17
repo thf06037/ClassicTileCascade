@@ -34,13 +34,13 @@
 CLogViewer::CLogViewer(bool bMainWnd)
 	:   BaseWnd(bMainWnd){}
 
-bool CLogViewer::InitInstance(HINSTANCE hInstance, const std::wstring& szFilePath)
+bool CLogViewer::InitInstance(HINSTANCE hInstance, std::wstring_view szFilePath)
 {
     m_szFilePath = szFilePath;
     return __super::InitInstance(hInstance);
 }
 
-bool CLogViewer::SetFile(const std::wstring& szFilePath)
+bool CLogViewer::SetFile(std::wstring_view szFilePath)
 {
     m_szFilePath = szFilePath;
     return OpenFile();
@@ -48,7 +48,7 @@ bool CLogViewer::SetFile(const std::wstring& szFilePath)
 
 bool CLogViewer::BeforeWndCreate(bool bRanPrior)
 {
-    const static std::wstring CLASS_NAME = L"ClassicTileWndLogViewer";
+    constexpr static std::wstring_view CLASS_NAME = L"ClassicTileWndLogViewer";
 
     if (!bRanPrior) {
         const static SPHMODULE hRtfLib ( eval_fatal_nz(::LoadLibraryW(L"Msftedit.dll")) );
@@ -58,7 +58,7 @@ bool CLogViewer::BeforeWndCreate(bool bRanPrior)
         m_wcex.hCursor = eval_fatal_nz(::LoadCursor(NULL, IDC_ARROW));
         m_wcex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
         m_wcex.lpszMenuName = reinterpret_cast<LPCWSTR>(IDC_LOGVIEWER);
-        m_wcex.lpszClassName = CLASS_NAME.c_str();
+        m_wcex.lpszClassName = CLASS_NAME.data();
         m_wcex.hIconSm = eval_fatal_nz(::LoadIcon(m_hInst, reinterpret_cast<LPCWSTR>(IDI_CLASSICTILECASCADE)));
     }
 
@@ -122,7 +122,7 @@ bool CLogViewer::OpenFile()
 
 LRESULT CLogViewer::ClassWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    const static UINT ID_FINDMSGSTRING = RegisterWindowMessage(FINDMSGSTRING);
+    const static UINT ID_FINDMSGSTRING = ::RegisterWindowMessage(FINDMSGSTRING);
 
     switch (uMsg)
     {
@@ -216,13 +216,13 @@ void CLogViewer::OnSelChange(HWND hwnd)
             auto FormatSection = [&szPartName, &szCell](LPCWSTR lpszPartName, 
                                                         long nStart, 
                                                         long nEnd, 
-                                                        const long* const pnStartDisp = nullptr, 
-                                                        const long* const pnEndDisp = nullptr)
+                                                        const std::optional<long>& pnStartDisp = {},
+                                                        const std::optional<long>& pnEndDisp = {})
             {
                 szPartName = lpszPartName;
 
-                long nStartDisp = pnStartDisp ? *pnStartDisp : nStart;
-                long nEndDisp = pnEndDisp ? *pnEndDisp : nEnd;
+                 long nStartDisp = pnStartDisp.value_or(nStart);
+                 long nEndDisp = pnEndDisp.value_or(nEnd);
 
                 if (nStart == nEnd) {
                     szCell = std::to_wstring(nStartDisp);
@@ -247,7 +247,7 @@ void CLogViewer::OnSelChange(HWND hwnd)
                     break;
 
                 case StatSection::LINE_CHARACTER:
-                    FormatSection(L"Line-Character", nChar, nCharEnd, &nCharOnLine, &nCharOnLineEnd);
+                    FormatSection(L"Line-Character", nChar, nCharEnd, nCharOnLine, nCharOnLineEnd);
                     break;
 
                 case StatSection::ZOOM:

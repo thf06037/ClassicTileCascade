@@ -127,11 +127,11 @@ public:
     basic_sz_buf& operator=(const basic_sz_buf&) = default;
     basic_sz_buf& operator=(basic_sz_buf&&) noexcept = default;
 
-    basic_sz_buf(T& sz, size_type nSize = T::npos, bool bRemoveNulls = true)
+    basic_sz_buf(T& sz, const std::optional<size_type>& nSize = {}, bool bRemoveNulls = true)
         : m_sz(sz), m_bRemoveNulls(bRemoveNulls)
     {
-        if (nSize != T::npos) {
-            m_sz.resize(nSize);
+        if (nSize) {
+            m_sz.resize(*nSize);
         }
     }
 

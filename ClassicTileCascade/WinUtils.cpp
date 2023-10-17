@@ -52,7 +52,7 @@ bool CTWinUtils::CheckMenuItem(HMENU hMenu, UINT uID, bool bChecked)
     return (::SetMenuItemInfoW(hMenu, uID, FALSE, &mii) == TRUE);
 }
 
-bool CTWinUtils::ShellExecInExplorerProcess(const std::wstring& szFile, const std::wstring& szArgs, LPDWORD pDWProcID)
+bool CTWinUtils::ShellExecInExplorerProcess(std::wstring_view szFile, std::wstring_view szArgs, LPDWORD pDWProcID)
 {
     const static DWORD DW_TOKEN_RIGHTS = TOKEN_QUERY | TOKEN_ASSIGN_PRIMARY | TOKEN_DUPLICATE | TOKEN_ADJUST_DEFAULT | TOKEN_ADJUST_SESSIONID;
     bool fRetVal = false;
@@ -66,7 +66,7 @@ bool CTWinUtils::ShellExecInExplorerProcess(const std::wstring& szFile, const st
             *pDWProcID = 0;
         }
 
-        std::wstring szCommandLine = szFile;
+        std::wstring szCommandLine { szFile };
         CTWinUtils::PathQuoteSpacesW(szCommandLine);
         if (!szArgs.empty()) {
             szCommandLine.append(L" ");
@@ -190,20 +190,20 @@ LPWSTR MyPathCombine(LPWSTR pszDest, LPCWSTR pszDir, LPCWSTR pszFile)
 	return ::PathCombineW(pszDest, pszDir, pszFile);
 }
 
-template<class T>
-bool CTWinUtils::PathCombineEx(T& szDest, const T& szDir, const T& szFile)
+template<class T, class TV>
+bool CTWinUtils::PathCombineEx(T& szDest, TV szDir, TV szFile)
 {
     szDest.clear();
-    return (MyPathCombine(basic_sz_buf<T>(szDest, MAX_PATH), szDir.c_str(), szFile.c_str()) != nullptr);
+    return (MyPathCombine(basic_sz_buf<T>(szDest, MAX_PATH), szDir.data(), szFile.data()) != nullptr);
 }
 
 template
-bool CTWinUtils::PathCombineEx(std::string& szDest, const std::string& szDir, const std::string& szFile);
+bool CTWinUtils::PathCombineEx(std::string& szDest, std::string_view szDir, std::string_view szFile);
 
 template
-bool CTWinUtils::PathCombineEx(std::wstring& szDest, const std::wstring& szDir, const std::wstring& szFile);
+bool CTWinUtils::PathCombineEx(std::wstring& szDest, std::wstring_view szDir, std::wstring_view szFile);
 
-bool CTWinUtils::CreateProcessHelper(const std::wstring& szCommand, const std::wstring& szArguments, LPDWORD lpdwProcId, int nShowWindow)
+bool CTWinUtils::CreateProcessHelper(std::wstring_view szCommand, std::wstring_view szArguments, LPDWORD lpdwProcId, const std::optional<int>& nShowWindow)
 {
     bool bRetVal = false;
     if (lpdwProcId) {
@@ -212,14 +212,14 @@ bool CTWinUtils::CreateProcessHelper(const std::wstring& szCommand, const std::w
 
     STARTUPINFO si = { 0 };
     si.cb = sizeof(si);
-    if (nShowWindow >= 0) {
+    if (nShowWindow) {
         si.dwFlags |= STARTF_USESHOWWINDOW;
-        si.wShowWindow = static_cast<WORD>(nShowWindow);
+        si.wShowWindow = static_cast<WORD>(*nShowWindow);
     }
 
     PROCESS_INFORMATION pi = { 0 };
     
-    std::wstring szCommandLine = szCommand;
+    std::wstring szCommandLine{szCommand};
     CTWinUtils::PathQuoteSpacesW(szCommandLine);
     if (!szArguments.empty()) {
         szCommandLine += L" ";
@@ -275,13 +275,13 @@ UINT CTWinUtils::SetSubMenuDataFromItemData(HMENU hMenu)
     return uRetVal;
 }
 
-bool CTWinUtils::FileExists(const std::wstring& szPath)
+bool CTWinUtils::FileExists(std::wstring_view szPath)
 {
-    DWORD dwAttrib = ::GetFileAttributesW(szPath.c_str());
+    DWORD dwAttrib = ::GetFileAttributesW(szPath.data());
     return (dwAttrib != INVALID_FILE_ATTRIBUTES) && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY);
 }
 
-void CTWinUtils::OpenTextFile(HWND hWnd, const std::wstring& szPath, const std::wstring& szAppName)
+void CTWinUtils::OpenTextFile(HWND hwnd, std::wstring_view szPath, std::wstring_view szAppName)
 {
     constexpr static wchar_t FMT_FILE_NOT_FOUND[] = L"Log file <{0}> does not exist yet.";
 
@@ -290,22 +290,20 @@ void CTWinUtils::OpenTextFile(HWND hWnd, const std::wstring& szPath, const std::
             eval_error_nz(::SetSearchPathMode(BASE_SEARCH_PATH_ENABLE_SAFE_SEARCHMODE));
             std::wstring szNotepadPath;
             sz_wbuf szNotepadPathBuf(szNotepadPath, MAX_PATH);
-            //eval_error_nz(::SearchPathW(nullptr, L"notepad.exe", nullptr, szNotepadPathBuf.size(), szNotepadPathBuf, nullptr));
             eval_error_nz(::SearchPathW(nullptr, L"notepad.exe", nullptr, static_cast<DWORD>(szNotepadPathBuf.size()), szNotepadPathBuf, nullptr));
             return szNotepadPath;
         }();
 
         if (!FileExists(szPath)) {
-            ::MessageBoxW(hWnd, std::format(FMT_FILE_NOT_FOUND, szPath).c_str(), szAppName.c_str(), MB_OK | MB_ICONINFORMATION);
+            ::MessageBoxW(hwnd, std::format(FMT_FILE_NOT_FOUND, szPath).c_str(), szAppName.data(), MB_OK | MB_ICONINFORMATION);
         } else {
             std::wstring szResult;
-            //int nRetVal = reinterpret_cast<int>(::FindExecutableW(szPath.c_str(), NULL, sz_wbuf(szResult, MAX_PATH)));
-            LONG_PTR nRetVal = reinterpret_cast<LONG_PTR>(::FindExecutableW(szPath.c_str(), NULL, sz_wbuf(szResult, MAX_PATH)));
+            LONG_PTR nRetVal = reinterpret_cast<LONG_PTR>(::FindExecutableW(szPath.data(), NULL, sz_wbuf(szResult, MAX_PATH)));
             if (nRetVal <= 32) {
                 szResult = NOTEPAD_PATH;
             }
 
-            std::wstring szPathQuote = szPath;
+            std::wstring szPathQuote { szPath };
             PathQuoteSpacesW(szPathQuote);
             eval_error_nz(CreateProcessHelper(szResult, szPathQuote, nullptr, SW_SHOWMAXIMIZED));
         }

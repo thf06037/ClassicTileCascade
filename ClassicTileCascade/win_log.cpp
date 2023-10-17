@@ -82,27 +82,25 @@ HRLoggingException::HRLoggingException(int level, const std::string& file, int l
 
 void HRLoggingException::Log() const
 {
-    static const std::string FMT_FUNCTION = "%s: Calling function <%s>: Received error : <0X%08X> %s";
+    static constexpr std::string_view FMT_FUNCTION = "%s: Calling function <%s>: Received error : <0X%08X> %s";
 
     IErrorInfoPtr spErrInfo;
 
     std::string szErrMsg;
     HRESULT hrGEI = ::GetErrorInfo(NULL, &spErrInfo);
-    //if (SUCCEEDED(hrGEI)) {
     if (hrGEI == S_OK) {
         _bstr_t szBDesc;
         hrGEI = spErrInfo->GetDescription(szBDesc.GetAddress());
         szErrMsg = static_cast<LPSTR>(szBDesc);
     }
 
-//    if (FAILED(hrGEI)) {
     if (hrGEI != S_OK) {
         if (!FormatMsg(m_errVal, szErrMsg)) {
             szErrMsg = "Unknown COM error";
         }
     }
 
-    log_log(m_level, m_file.c_str(), m_line, FMT_FUNCTION.c_str(), m_function.c_str(), m_functionCalled.c_str(), m_errVal, szErrMsg.c_str());
+    log_log(m_level, m_file.c_str(), m_line, FMT_FUNCTION.data(), m_function.c_str(), m_functionCalled.c_str(), m_errVal, szErrMsg.c_str());
 }
 
 DWLoggingException::DWLoggingException(int level, const std::string& file, int line, const std::string& function, const std::string& functionCalled, DWORD errVal)
@@ -111,14 +109,14 @@ DWLoggingException::DWLoggingException(int level, const std::string& file, int l
 
 void DWLoggingException::Log() const
 {
-    static const std::string FMT_FUNCTION = "%s: Calling function <%s>: Received error : <0X%08X> %s";
+    static constexpr std::string_view FMT_FUNCTION = "%s: Calling function <%s>: Received error : <0X%08X> %s";
 
     std::string szErrVal;
     if (!FormatMsg(m_errVal, szErrVal)) {
         szErrVal = "Unknown Windows error";
     }
 
-    log_log(m_level, m_file.c_str(), m_line, FMT_FUNCTION.c_str(), m_function.c_str(), m_functionCalled.c_str(), m_errVal, szErrVal.c_str());
+    log_log(m_level, m_file.c_str(), m_line, FMT_FUNCTION.data(), m_function.c_str(), m_functionCalled.c_str(), m_errVal, szErrVal.c_str());
 }
 
 MSGLoggingException::MSGLoggingException(int level, const std::string& file, int line, const std::string& function, const std::string& errMsg)
@@ -127,8 +125,8 @@ MSGLoggingException::MSGLoggingException(int level, const std::string& file, int
 
 void MSGLoggingException::Log() const
 {
-    static const std::string FMT_FUNCTION = "%s: %s";
-    log_log(m_level, m_file.c_str(), m_line, FMT_FUNCTION.c_str(), m_function.c_str(), m_errMsg.c_str());
+    static constexpr std::string_view FMT_FUNCTION = "%s: %s";
+    log_log(m_level, m_file.c_str(), m_line, FMT_FUNCTION.data(), m_function.c_str(), m_errMsg.c_str());
 }
 
 

@@ -38,8 +38,6 @@
 #define FORWARD_SWM_TRAYMSG(hwnd, wNotifEvent, wIconId, x, y, fn) \
 	(void)(fn)((hwnd), SWM_TRAYMSG, MAKEWPARAM((x), (y)), MAKELPARAM((wNotifEvent), (wIconId)))
 
-const std::wstring ClassicTileWnd::APP_NAME = L"Classic Tile Cascade";
-
 ClassicTileWnd ClassicTileWnd::s_classicTileWnd;
 
 ClassicTileWnd::ClassicTileWnd()
@@ -48,7 +46,8 @@ ClassicTileWnd::ClassicTileWnd()
 
 bool ClassicTileWnd::BeforeWndCreate(bool bRanPrior) 
 {
-    const static std::wstring CLASS_NAME = L"ClassicTileWndClass";
+    constexpr static std::wstring_view CLASS_NAME = L"ClassicTileWndClass";
+
     ClassicTileRegUtil::GetRegLogging(m_bLogging);
     if (m_bLogging) {
         EnableLogging();
@@ -92,7 +91,7 @@ bool ClassicTileWnd::BeforeWndCreate(bool bRanPrior)
 
     ClassicTileRegUtil::GetRegDefWndTile(m_bDefWndTile);
 
-    m_wcex.lpszClassName = CLASS_NAME.c_str();
+    m_wcex.lpszClassName = CLASS_NAME.data();
 
     return true;
 }
@@ -334,13 +333,13 @@ void ClassicTileWnd::OnHelp(HWND hwnd) const
 {
     try {
         const static std::wstring CHM_PATH = []() {
-            const static std::wstring CHM_FILE_NAME = L"ClassicTileCascadeHelp.chm";
+            constexpr static std::wstring_view CHM_FILE_NAME = L"ClassicTileCascadeHelp.chm";
             std::wstring szExePath = CTGlobals::CURR_MODULE_PATH;
 
             eval_error_es(::PathCchRemoveFileSpec(sz_wbuf(szExePath), szExePath.size()));
 
             std::wstring szHelpPath;
-            CTWinUtils::PathCombineEx(szHelpPath, szExePath, CHM_FILE_NAME);
+            CTWinUtils::PathCombineEx(szHelpPath, static_cast<std::wstring_view>(szExePath), CHM_FILE_NAME);
             return szHelpPath;
         }();
 
@@ -386,7 +385,7 @@ void ClassicTileWnd::OnSettingsAutoStart()
 
 void ClassicTileWnd::OnSettingsLogging(HWND hwnd)
 {
-    static const std::wstring MSG_BOX_MAIN = L"Logging enabled.";
+    static constexpr std::wstring_view MSG_BOX_MAIN = L"Logging enabled.";
     
     static constexpr wchar_t MSG_BOX_FMT_LOGGING[] = L"Log files are stored at: <A HREF=\"{0}\">{0}</A>.";
     static const std::wstring MSG_BOX_CONTENT = std::format(MSG_BOX_FMT_LOGGING, CTGlobals::LOG_PATH);
@@ -407,9 +406,9 @@ void ClassicTileWnd::OnSettingsLogging(HWND hwnd)
             tdc.hwndParent = hwnd;
             tdc.hInstance = m_hInst;
             tdc.dwCommonButtons = TDCBF_OK_BUTTON;
-            tdc.pszWindowTitle = APP_NAME.c_str();
+            tdc.pszWindowTitle = APP_NAME.data();
             tdc.pszMainIcon = TD_INFORMATION_ICON;
-            tdc.pszMainInstruction = MSG_BOX_MAIN.c_str();
+            tdc.pszMainInstruction = MSG_BOX_MAIN.data();
             tdc.pfCallback = s_TaskDlgProc;
             tdc.lpCallbackData = reinterpret_cast<LONG_PTR>(this);
             tdc.dwFlags = TDF_SIZE_TO_CONTENT | TDF_ENABLE_HYPERLINKS;
@@ -446,7 +445,7 @@ void ClassicTileWnd::OnSettingsDefWndTile()
 
 void ClassicTileWnd::GetToolTip()
 {
-    const static std::wstring TIP_FMT = APP_NAME + L"\r\nLeft-click: %s";
+    const static std::wstring TIP_FMT = std::wstring(APP_NAME) + L"\r\nLeft-click: %s";
 
     try {
         const std::wstring& szLeftClick = FindMenuId2MenuItem(MenuId2MenuItemDir::File2DefaultMap, m_nLeftClick).szFileString;
@@ -595,8 +594,7 @@ ClassicTileWnd::File2DefaultStruct::File2DefaultStruct(UINT uDefault_, UINT uFil
 void ClassicTileWnd::OnHyperlinkClick(LPARAM lpszURL) 
 {
     try {
-        const std::wstring szURL = eval_error_nz(reinterpret_cast<LPCWSTR>(lpszURL));
-        OnSettingsOpenLogFile(m_niData.hWnd, szURL);
+        OnSettingsOpenLogFile(m_niData.hWnd, eval_error_nz(reinterpret_cast<LPCWSTR>(lpszURL)));
     }catch (const LoggingException& le) {
         le.Log();
     }catch (...) {
@@ -695,13 +693,13 @@ bool ClassicTileWnd::Run(HINSTANCE hInst)
     return s_classicTileWnd.InitInstance(hInst);
 }
 
-void ClassicTileWnd::OnSettingsOpenLogFile(HWND hwnd, const std::wstring& szPath)
+void ClassicTileWnd::OnSettingsOpenLogFile(HWND hwnd, std::wstring_view szPath)
 {
     try {
         constexpr static wchar_t FMT_FILE_NOT_FOUND[] = L"Log file <{0}> does not exist yet.";
 
         if (!CTWinUtils::FileExists(szPath)) {
-            ::MessageBoxW(hwnd, std::format(FMT_FILE_NOT_FOUND, szPath).c_str(), APP_NAME.c_str(), MB_OK | MB_ICONINFORMATION);
+            ::MessageBoxW(hwnd, std::format(FMT_FILE_NOT_FOUND, szPath).c_str(), APP_NAME.data(), MB_OK | MB_ICONINFORMATION);
         } else if (m_logViewer.GetHWND() ){
             if (::IsIconic(m_logViewer.GetHWND())) {
                 eval_error_nz(::ShowWindow(m_logViewer.GetHWND(), SW_RESTORE));

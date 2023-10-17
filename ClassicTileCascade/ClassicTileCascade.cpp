@@ -33,11 +33,11 @@
 #include "ClassicTileRegUtil.h"
 #include "CTGlobals.h"
 
-const static std::wstring MUTEX_GUID = L"{436805EB-7307-4A82-A1AB-C87DC5EE85B6";
+constexpr static std::wstring_view MUTEX_GUID = L"{436805EB-7307-4A82-A1AB-C87DC5EE85B6";
 
 bool CheckAlreadyRunning(UINT uRetries);
 bool RegUnReg(bool& fSuccess);
-bool RegUnRegAsUser(const std::wstring& szFirstArg);
+bool RegUnRegAsUser(std::wstring_view szFirstArg);
 bool Unregister();
 bool Register();
 
@@ -92,7 +92,7 @@ bool CheckAlreadyRunning(UINT uRetries)
 {
     bool bRetVal = true;
     for (UINT i = 0; bRetVal && (i < uRetries); i++) {
-        HANDLE hFirst = ::CreateMutexW(nullptr, FALSE, MUTEX_GUID.c_str());
+        HANDLE hFirst = ::CreateMutexW(nullptr, FALSE, MUTEX_GUID.data());
         bRetVal = (hFirst && (::GetLastError() == ERROR_ALREADY_EXISTS));
         if (bRetVal ) {
             ::CloseHandle(hFirst);
@@ -108,10 +108,10 @@ bool CheckAlreadyRunning(UINT uRetries)
 
 bool RegUnReg(bool& fSuccess)
 {
-    static const std::wstring REG = L"/REGISTER";
-    static const std::wstring UNREG = L"/UNREGISTER";
-    static const std::wstring REGUSER = L"/REGISTERUSER";
-    static const std::wstring UNREGUSER = L"/UNREGISTERUSER";
+    static constexpr std::wstring_view REG = L"/REGISTER";
+    static constexpr std::wstring_view UNREG = L"/UNREGISTER";
+    static constexpr std::wstring_view REGUSER = L"/REGISTERUSER";
+    static constexpr std::wstring_view UNREGUSER = L"/UNREGISTERUSER";
 
     bool fRetVal = false;
     fSuccess = false;
@@ -159,14 +159,15 @@ bool RegUnReg(bool& fSuccess)
 
 }
 
-bool RegUnRegAsUser(const std::wstring& szFirstArg)
+bool RegUnRegAsUser(std::wstring_view szFirstArg)
 {
     bool fSuccess = false;
     try {
-        std::wstring szRegUser = szFirstArg + L"USER";
+        std::wstring szRegUser { szFirstArg };
+        szRegUser += L"USER";;
         log_info_procid("Processs running at %s level.",  IsUserAnAdmin() ? "elevated" : "regular");
         log_info_procid("<%S> parameter passed - attempting to launch app as logged in user with command line argument <%S>",
-            szFirstArg.c_str(), szRegUser.c_str());
+            szFirstArg.data(), szRegUser.c_str());
 
         DWORD dwNewProcID = 0;
         eval_fatal_nz(CTWinUtils::ShellExecInExplorerProcess(CTGlobals::CURR_MODULE_PATH, szRegUser, &dwNewProcID));

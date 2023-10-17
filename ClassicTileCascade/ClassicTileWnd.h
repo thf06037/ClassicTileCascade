@@ -106,7 +106,7 @@ protected:
 	void OnSettingsAutoStart();
 	void OnSettingsLogging(HWND hwnd);
 	void OnSettingsDefWndTile();
-	void OnSettingsOpenLogFile(HWND hwnd, const std::wstring& szPath);
+	void OnSettingsOpenLogFile(HWND hwnd, std::wstring_view szPath);
 
 	//////////////////////////
 	//Task Dialog msg handlers
@@ -125,7 +125,7 @@ protected:
 	/////////////////
 	// For use with NOTIFYICONDATA::uID
 	constexpr static UINT TRAYICONID = 1;
-	const static std::wstring APP_NAME;
+	constexpr static std::wstring_view APP_NAME = L"Classic Tile Cascade";
 
 
 protected:

@@ -14,10 +14,9 @@ class CLogViewer : public BaseWnd<CLogViewer>
 {
 public:
 	CLogViewer(bool bMainWnd = false);
-
-	bool InitInstance(HINSTANCE hInstance, const std::wstring& szFilePath);
+	bool InitInstance(HINSTANCE hInstance, std::wstring_view szFilePath);
 	bool ProcessDlgMsg(LPMSG lpMsg) override;
-	bool SetFile(const std::wstring& szFilePath);
+	bool SetFile(std::wstring_view szFilePath);
 	
 	CLogViewer(const CLogViewer&) = delete;
 	CLogViewer(CLogViewer&&) noexcept = delete;
