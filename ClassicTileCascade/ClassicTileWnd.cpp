@@ -652,27 +652,15 @@ void ClassicTileWnd::OnSettingsPopup(HMENU hMenu)
 
 void ClassicTileWnd::OnLeftClickDoesPopup(HMENU hMenu)
 {
-    using MinMaxFn = const UINT& (*)(const UINT&, const UINT&);
+    const static auto MENU_MIN_MAX = [hMenu]() {
+        std::vector<UINT> menuVect(::GetMenuItemCount(hMenu));
+        std::ranges::generate(menuVect, [hMenu, i=0u]() mutable {return ::GetMenuItemID(hMenu, i++);});
+        return std::ranges::minmax(menuVect);
+    }();
 
-    auto MinMaxMenu = [hMenu](MinMaxFn minMaxFn) {
-        int nCount = ::GetMenuItemCount(hMenu);
-        if (nCount > 0) {
-            UINT uMeasure = ::GetMenuItemID(hMenu, 0);
-            for (UINT i = 1; i < static_cast<UINT>(nCount); i++) {
-                UINT uId = ::GetMenuItemID(hMenu, i);
-                uMeasure = minMaxFn(uId, uMeasure);
-            }
-            return uMeasure;
-        }
-        
-        return 0u;
-    };
-
-    const static UINT POPUP_MIN = MinMaxMenu(&(std::min));
-    const static UINT POPUP_MAX = MinMaxMenu(&(std::max));
 
     try{
-        eval_error_nz(::CheckMenuRadioItem(hMenu, POPUP_MIN, POPUP_MAX, FindMenuId2MenuItem(MenuId2MenuItemDir::File2DefaultMap, m_nLeftClick).uDefault, MF_BYCOMMAND));
+        eval_error_nz(::CheckMenuRadioItem(hMenu, MENU_MIN_MAX.min, MENU_MIN_MAX.max, FindMenuId2MenuItem(MenuId2MenuItemDir::File2DefaultMap, m_nLeftClick).uDefault, MF_BYCOMMAND));
     } catch (const LoggingException& le) {
         le.Log();
     } catch (...) {
