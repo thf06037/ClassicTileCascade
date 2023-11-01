@@ -14,8 +14,15 @@ class CLogViewer : public BaseWnd<CLogViewer>
 {
 public:
 	CLogViewer(bool bMainWnd = false);
+
+	//Overload of this function to include the file path of the file
+	//being viewed in the viewer
 	bool InitInstance(HINSTANCE hInstance, std::wstring_view szFilePath);
+	
 	bool ProcessDlgMsg(LPMSG lpMsg) override;
+	
+	//Set the viewed file name and (re)open the file as read-only
+	//in the rich edit control
 	bool SetFile(std::wstring_view szFilePath);
 	
 	CLogViewer(const CLogViewer&) = delete;
@@ -43,19 +50,40 @@ protected:
 	////////////////////
 	//Callbacks
 	////////////////////
+	//Actual dialog callback. Sets DWLP_USER to the this pointer in WM_INITDIALOG.
+	//Delegates to GotoDlgFunc 
 	static INT_PTR CALLBACK s_DlgFunc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+	//Callback for subclassing the rich edit control. Necessary to capture mouse wheel events and update the status 
+	//of the zoom in the status bar
 	static LRESULT CALLBACK s_RESubClass(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 
 	////////////////////
 	//Helper functions
 	////////////////////
+	//(Re)open the file indicated in m_szFilePath 
+	//and move the rich edit box cursor to the end of the 
+	//box
 	bool OpenFile();
+
+
 	void FindString(LPFINDREPLACEW lpfr);
+
+	//Get the entire range of the doc
 	void GetDocRange(ITextRangePtr& spRange);
+
+	//Launch a modal dialog with uResource resource ID.
+	//Uses s_DlgFunc as the callback
 	INT_PTR DoModal(HWND hwnd, UINT uResource);
+
 	LRESULT LVDefDlgProcEx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+	//Create (if hwnd is nullptr) or destroy (if hwnd != nullptr) the status bar
 	void CreateDestroyStatusBar(HWND hwnd);
+
+
 	double GetZoom(long* pnNumerator = nullptr, long* pnDenominator = nullptr);
+
 	void SetLineNumbers(HWND hwnd);
 
 	////////////////////////
@@ -115,6 +143,8 @@ protected:
 	//////////////////
 	//static members
 	//////////////////
+
+	//Describes the 4 sections of the status bar
 	enum class StatSection : UINT
 	{
 		LINE,
@@ -124,6 +154,7 @@ protected:
 	};
 	constexpr static UINT STATUS_PARTS = static_cast<UINT>(StatSection::ZOOM) + 1;
 
+	//MIN and MAX numerators for rich edit zoom 
 	constexpr static UINT MIN_NUMERATOR = 10;
 	constexpr static UINT MAX_NUMERATOR = 500;
 
@@ -131,11 +162,16 @@ protected:
 	//////////////////
 	//instance members
 	//////////////////
+	
+	//File to view
 	std::wstring m_szFilePath;
 
 	HWND m_hEdit = nullptr;
 	HWND m_hStatus = nullptr;
 
+	//ITextDocument is the COM interface that allows manipulation 
+	//of the contents of the Rich Edit box. Prefer this to using
+	//SendMessage(m_hEdit, ...) for manipulating contents
 	ITextDocumentPtr m_spTextDoc;
 
 	LPFINDREPLACEW m_pFR = nullptr;

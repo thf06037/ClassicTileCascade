@@ -5,6 +5,8 @@
  * under the terms of the MIT license. See `ClassicTileCascade.cpp` for details.
  */
 #pragma once
+//Base class for classes representing windows
+//Provides methods for common window initialization and destruction tasks
 template<class derived>
 class BaseWnd
 {
@@ -12,6 +14,15 @@ public:
 	BaseWnd(bool bMainWnd = false) 
 		: m_bMainWnd(bMainWnd){};
 
+	//Method to call before starting windows msg pump.
+	//This method will create windows class and window 
+	//with minimal functionality (basically functionality for 
+	//an invisible window. Subclasses should override BeforeWndCreate
+	//to set windows class features (by assigning values to the members
+	//of m_wcex) and/or to set windows features (by assigning values to
+	//the various other member variables as described below. Subclasses
+	//that need to perform custom initiation actions after windows creation
+	//should override AfterWndCreate
 	virtual bool InitInstance(HINSTANCE hInstance)
 	{
 		bool bRetVal = false;
@@ -21,21 +32,27 @@ public:
 
 			m_hInst = hInstance;
 
+			//Set up miminal windows class values. 
 			m_wcex.cbSize = sizeof(WNDCLASSEX);
 			m_wcex.lpfnWndProc = s_WndProc;
 			m_wcex.cbWndExtra = sizeof(this);
 			m_wcex.hInstance = m_hInst;
 
 			if (BeforeWndCreate(bRanPrior)) {
-
+				//At a minimum, BeforeWndCreate must set the windows class name
 				eval_fatal_nz(m_wcex.lpszClassName);
 
+				//Check if we've registered windows class previously and only
+				//register if we haven't
 				WNDCLASSEXW wcex = { 0 };
 				wcex.cbSize = sizeof(WNDCLASSEX);
 				if (!::GetClassInfoExW(m_hInst, m_wcex.lpszClassName, &wcex)) {
 					eval_fatal_nz(::RegisterClassExW(&m_wcex));
 				}
 
+				//A CBT windows hook is used to ensure that we can set GWLP_USERDATA (windows class user data) with this
+				//pointer before the first time our windows proc is called. The hook is removed immediately after the the
+				//window is created
 				HookStruct hookStruct = { this, eval_fatal_nz(::SetWindowsHookExW(WH_CBT, s_CBTProc, 0, GetCurrentThreadId())) };
 
 				try {
@@ -61,6 +78,9 @@ public:
 		return bRetVal;
 	}
 
+	//Method that should be called from within windows msg pump to 
+	//Subclasses should override if they need to call any dialog or 
+	//accelerator functions. 
 	virtual bool ProcessDlgMsg(LPMSG lpMsg)
 	{
 		return false;
@@ -84,16 +104,25 @@ protected:
 	};
 
 protected:
+	//Miminal windows proc that just calls the DefWindowProc. Almost all subclasses 
+	//will override this method and just call BaseWnd's version of the method if 
+	//their ClassWndProc doesn't process a certain msg
 	virtual LRESULT ClassWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		return ::DefWindowProcW(hwnd, uMsg, wParam, lParam);
 	}
 
-	virtual bool BeforeWndCreate(bool bRanPrior)
-	{
-		return true;
-	}
+	//Pure virtual function that is called from InitInstance before registering 
+	//Windows class and creating the window. At a minimum, m_wcex.lpszClassName
+	//must be set in this method, but most subclasses will also set other Windows
+	//class members (i.e. members of m_wcex) and other member variables that
+	//are passed to CreateWindow. If bRanPrior is true, subclasses can use this to
+	//do any cleanup necessary. Returning false from this method will cause
+	//InitInstance return false and to not register the windows calss or create the window.
+	virtual bool BeforeWndCreate(bool bRanPrior) = 0;
 
+	//This method can be  overriden if subclass needs to do any custom initiation after window creation is complete
+	//Returning false from this method will cause InitInstance to return false
 	virtual bool AfterWndCreate(bool bRanPrior)
 	{
 		return true;
@@ -122,7 +151,9 @@ protected:
 		}
 	}
 
-
+	//Actual WndProc for all derived classes. This method simply retrieves the this pointer
+	//from GWLP_USERDATA (which was set in the CBT windows hook process before the first message
+	//is dispatched to this proc) and calls ClassWndProc of the subclass
 	static LRESULT CALLBACK s_WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		LRESULT nRetVal = 0;
@@ -131,6 +162,9 @@ protected:
 		if (pThis) {
 			nRetVal = pThis->ClassWndProc(hwnd, uMsg, wParam, lParam);
 		} else {
+			//Something is wrong if we are receiving WM_NCCREATE or WM_CREATE and the
+			//this pointer isn't in GWLP_USERDATA yet. Return the failure values for each
+			//of these message types 
 			switch (uMsg) {
 			case WM_NCCREATE:
 				nRetVal = FALSE;
@@ -182,11 +216,18 @@ protected:
 	}
 
 protected:
+	//HINSTANCE passed by client into the call to InitInstance
 	HINSTANCE m_hInst = nullptr;
+
+	//HWND for our class
 	HWND m_hWnd = nullptr;
 
+	//Windows class info. Subclasses should update values
+	//as necessary in BeforeWndCreate
 	WNDCLASSEXW m_wcex = { 0 };
 
+	//Parameters to CreateWindow. Subclasses should update values
+	//as necessary in BeforeWndCreate
 	std::wstring m_szWinTitle;
 	DWORD     m_dwExStyle = 0;
 	DWORD     m_dwStyle = 0;
@@ -196,6 +237,13 @@ protected:
 	int		  m_nHeight = 0;
 	HWND      m_hwndParent = nullptr;
 	HMENU	  m_hMenu = nullptr;
+
+	//These two control whether or not OnDestroy will 
+	//call PostQuitMessage to end the message pump
+	//m_bMainWnd is meant to indicate whether or not
+	//the subclass is the main app window (should end the 
+	//message pump on destruction. 
+	//m_bQuit meant to use for temporary override of this
 	bool	  m_bQuit = true;
 	bool	  m_bMainWnd = false;
 

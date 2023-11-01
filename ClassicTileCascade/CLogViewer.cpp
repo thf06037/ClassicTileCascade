@@ -106,6 +106,7 @@ bool CLogViewer::OpenFile()
 
         SetLineNumbers(m_hWnd);
 
+        //Move cursor to end of Rich Edit control
         ITextSelectionPtr spTextSelection;
         eval_fatal_hr(m_spTextDoc->GetSelection(&spTextSelection));
         eval_fatal_hr(spTextSelection->EndKey(tomStory, tomMove, nullptr));
@@ -148,6 +149,8 @@ LRESULT CLogViewer::ClassWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
     return __super::ClassWndProc(hwnd, uMsg, wParam, lParam);
 }
 
+//Update first 3 fields of status bar (that track rich edit cursor position)
+//when cursor position changes
 LRESULT CLogViewer::OnNotify(HWND hwnd, int uControl, NMHDR* lpNMHDR)
 {
     try{
@@ -171,6 +174,8 @@ void CLogViewer::OnSelChange(HWND hwnd)
             ITextSelectionPtr spTextSelection;
             eval_error_hr(m_spTextDoc->GetSelection(&spTextSelection));
 
+            //Get the current character position of the end of the
+            //current selection
             long nEnd = 0;
             eval_error_hr(spTextSelection->GetEnd(&nEnd));
 
@@ -183,9 +188,14 @@ void CLogViewer::OnSelChange(HWND hwnd)
                     nCharOnLine = 0,
                     nCharOnLineEnd = 0;
             
+            //Get the current RE character and line positions of start of 
+            //current selection
             eval_error_hr(spTextSelection->GetIndex(tomCharacter, &nChar));
             eval_error_hr(spTextSelection->GetIndex(tomLine, &nLine));
 
+            //Duplicate the current selections range, move the range to
+            //beginning of current line to get the character position of
+            //the beginning of the current line
             ITextRangePtr spRange;
             eval_error_hr(spTextSelection->GetDuplicate(&spRange));
             eval_error_hr(spRange->SetIndex(tomLine, nLine, 0));
@@ -193,7 +203,15 @@ void CLogViewer::OnSelChange(HWND hwnd)
 
             double fZoom = GetZoom();
 
+            //nEnd will be 0 only if the cursor is currently before the
+            //first character of the RE control
             if (nEnd != 0) {
+                //if the cursor is NOT currently before first character of the RE control
+                
+
+                //Duplicate the range of the current selction, set the cursor to
+                //end of the current range and get the char and line positions
+                //of the end of the range
                 ITextRangePtr spRangeEnd;
                 eval_error_hr(spTextSelection->GetDuplicate(&spRangeEnd));
                 eval_error_hr(spRangeEnd->SetIndex(tomCharacter, nEnd, 0));
@@ -201,9 +219,14 @@ void CLogViewer::OnSelChange(HWND hwnd)
                 eval_error_hr(spRangeEnd->GetIndex(tomCharacter, &nCharEnd));
                 eval_error_hr(spRangeEnd->GetIndex(tomLine, &nLineEnd));
 
+                //move the original copied range's  to beginning of line 
+                //of the end of the selection to get the character position of
+                //the beginning of the line where the end of the selection is
                 eval_error_hr(spRange->SetIndex(tomLine, nLineEnd, 0));
                 eval_error_hr(spRange->GetIndex(tomCharacter, &nLineEndChar));
 
+                //calculate the character position of the start and end
+                //of the current selection
                 nCharOnLine = nChar - nLineStartChar + 1;
                 nCharOnLineEnd = nCharEnd - nLineEndChar + 1;
             } else {
@@ -225,14 +248,22 @@ void CLogViewer::OnSelChange(HWND hwnd)
                  long nEndDisp = pnEndDisp.value_or(nEnd);
 
                 if (nStart == nEnd) {
+                    //No selection, cursor is before the character pos nStartDisp
                     szCell = std::to_wstring(nStartDisp);
                 } else if (nEnd < nStart) {
+                    //No selection, cursor is at the start of a line
+                    //nEndDisp represents the pos of the former line
+                    //nStartDisp represents the pos of the current line
                     szCell = std::format(L"{0},{1}", nEndDisp, nStartDisp);
                 } else {
+                    //nEnd > nStart
+                    //Text is selected 
                     szCell = std::format(L"{0}-{1}", nStartDisp, nEndDisp);
                 }
             };
 
+            //Loop through the sections of the status bar and prepare formatted
+            //content for each section
             for (UINT i = 0; i < STATUS_PARTS; i++) {
                 szPartName.clear();
                 szCell.clear();
@@ -309,6 +340,10 @@ void CLogViewer::OnSize(HWND hwnd, UINT state, int cx, int cy)
 {
     try {
         int iStatusHeight = 0;
+
+        //If status bar is present, get its height in order
+        //to shrink the height of the RE control by the height 
+        //of the status bar
         if (m_hStatus && ::IsWindow(m_hStatus)) {
             ::SendMessageW(m_hStatus, WM_SIZE, 0, 0);
             RECT rStatus = { 0 };
@@ -316,6 +351,8 @@ void CLogViewer::OnSize(HWND hwnd, UINT state, int cx, int cy)
             iStatusHeight = rStatus.bottom - rStatus.top;
         }
 
+        //Have the RE control occupy entire client area of the window, less the height of the 
+        //status bar, if present
         eval_error_nz( ::SetWindowPos(m_hEdit, hwnd, 0, 0, cx, cy - iStatusHeight, SWP_NOMOVE | SWP_NOZORDER) );
     } catch (const LoggingException& le) {
         le.Log();
@@ -481,28 +518,49 @@ void CLogViewer::FindString(LPFINDREPLACEW lpfr)
         long nLength = 0;
         HRESULT hr = E_UNEXPECTED;
         if (lpfr->Flags & FR_DOWN) {
+            //We want to find text in szFind after the end of the current
+            //selection. In order to do this, we store the start
+            //and end indexes of the current selection, move (collapse)
+            //the selection to right after the end of the selection
+            //and search for the text. 
             long nCheckStart = 0, nCheckEnd = 0;
             eval_error_hr(spSelection->GetStart(&nCheckStart));
             eval_error_hr(spSelection->GetEnd(&nCheckEnd));
             eval_error_hr(spSelection->Collapse(tomEnd));
 
+
+            //If text is found, spSelection->FindText will update the cursor to beginning 
+            //of the found text. We need to capture nLength of the found text to set 
+            //the end of the selection below
 #pragma push_macro("FindText") 
 #undef FindText
             hr = eval_error_hr(spSelection->FindText(szFind, tomForward, nFlags, &nLength));
 #pragma pop_macro("FindText") 
             
+            //If text is not found, spSelection->FindText returns S_FALSE
+            //and we use the values captured to restore the current selection
             if (hr != S_OK) {
                 eval_error_hr(spSelection->SetStart(nCheckStart));
                 eval_error_hr(spSelection->SetEnd(nCheckEnd));
             }
             
         } else {
+            //Backward (upward) search will search starting before the current selection
+            //For backward search we need to provide spSelection->FindTextStart with
+            //the # of characters to search backwards for. We want the search to go back 
+            //to the beginning of the RE Control, so we use the current character position of the 
+            //start of the selection as the # of characters
             long nStart = 0;
             eval_error_hr(spSelection->GetStart(&nStart));
 
+            //If text is found, spSelection->FindText will update the cursor to beginning 
+            //of the found text. We need to capture nLength of the found text to set 
+            //the end of the selection below
             hr = eval_error_hr(spSelection->FindTextStart(szFind, -nStart, nFlags, &nLength));
         }
 
+        //If spSelection->FindTextStart found the text, it returns S_OK
+        //set the end of the selection to highlight the found text
         if (hr == S_OK) {
             long nSelStart = 0;
             eval_error_hr(spSelection->GetStart(&nSelStart));
@@ -562,6 +620,9 @@ void CLogViewer::OnFindAgain(HWND hwnd, int id)
 
 bool CLogViewer::ProcessDlgMsg(LPMSG lpMsg)
 {
+    //Find dialogs (created in OnFind) is modeless, so we need to
+    //process the dialog messages for it
+    //The "Goto" dialog box is modal, so no need to process its messages
     bool bRetVal = m_hDlgFind && ::IsDialogMessageW(m_hDlgFind, lpMsg);
     if (!bRetVal) {
         bRetVal = ::TranslateAcceleratorW(m_hWnd, m_hAccel, lpMsg);
@@ -579,6 +640,7 @@ void CLogViewer::OnZoom(HWND hwnd, int id)
         long nDenominator = 0;
         GetZoom(&nNumerator, &nDenominator);
 
+        //Round down the numerator to the nearest multiple of 10
         nNumerator -= (nNumerator % NUMERATOR_CHANGE);
 
         if (id == ID_ZOOM_ZOOMIN ) {
@@ -629,7 +691,8 @@ void CLogViewer::OnSetFocus(HWND, HWND)
 
 void CLogViewer::OnInitEditMenu(HMENU hMenu)
 {
-
+    //Find next/find previous menu commands should only
+    //be enabled if the Find dialog has been opened at least once
     UINT uFlag = MF_BYCOMMAND | (m_pFR ? MF_ENABLED : MF_DISABLED);
     ::EnableMenuItem(hMenu, ID_EDIT_FINDNEXT, uFlag);
     ::EnableMenuItem(hMenu, ID_EDIT_FINDPREVIOUS, uFlag);
@@ -643,6 +706,7 @@ void CLogViewer::OnInitZoomMenu(HMENU hMenu)
         long nDenominator = 0;
         GetZoom(&nNumerator, &nDenominator);
 
+        //Disable the Zoom In/Zoom out menu commands if the current zoom is more or less than the MAX/MIN
         ::EnableMenuItem(hMenu, ID_ZOOM_ZOOMIN, MF_BYCOMMAND | ((nNumerator < MAX_NUMERATOR) ? MF_ENABLED : MF_DISABLED));
         ::EnableMenuItem(hMenu, ID_ZOOM_ZOOMOUT, MF_BYCOMMAND | ((nNumerator > MIN_NUMERATOR) ? MF_ENABLED : MF_DISABLED));
     } catch (const LoggingException& le) {
@@ -678,13 +742,30 @@ void CLogViewer::OnGoto(HWND hwnd)
         m_nGotoLine = nCurrLine;
 
         if (DoModal(hwnd, IDD_GOTO) ) {
+            //User clicked OK button in Goto dialog
+
+            //Get a range pointing to the end of the RE control
             ITextRangePtr spRange;
             eval_error_hr(m_spTextDoc->Range(0, 0, &spRange));
             eval_error_hr(spRange->MoveStart(tomStory, 1, nullptr));
 
+            //Get the current line, which will yield the # of lines
+            //in the RE control b/c we are at the end of the control
             long nCount = 0;
             eval_error_hr(spRange->GetIndex(tomLine, &nCount));
             if (m_nGotoLine > 0 && m_nGotoLine <= nCount) {
+                //We want the cursor to be at the beginning of the
+                //line selected in the Goto dialog. The way to accomplish
+                //this is to move the cursor to the beginning of the current line 
+                //(using spTextSelection->HomeKey) and then set the line number
+                //(using spTextSelection->SetIndex). 
+                //However, if the cursor is _already_ at the beginning of the 
+                //current line, then spTextSelection->HomeKey will make a 
+                //"ding" sound since the cursor is already at the beginning of the 
+                //line. To test whether the cursor is already at the beginning 
+                //of the current line, we make a duplicate of the current selection,
+                //move the cursor back by 1 character, and see whether the 
+                //line number != the previous line number.
                 eval_error_hr(spTextSelection->GetDuplicate(&spRange));
                 eval_error_hr(spRange->Move(tomCharacter, -1, nullptr));
                 long nNewLine = 0;
@@ -708,9 +789,9 @@ void CLogViewer::OnGoto(HWND hwnd)
     m_nGotoLine = 0;
 }
 
+
 INT_PTR CALLBACK CLogViewer::s_DlgFunc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-
     if (uMsg == WM_INITDIALOG) {
         ::SetLastError(0);
         if (!::SetWindowLongPtrW(hwnd, DWLP_USER, lParam) && ::GetLastError() != 0) {
@@ -718,7 +799,15 @@ INT_PTR CALLBACK CLogViewer::s_DlgFunc(HWND hwnd, UINT uMsg, WPARAM wParam, LPAR
             return TRUE;
         }
     }
-    
+
+    //This dialog proc uses a recursive call from the dialog procedure back into DefDlgProc to trigger 
+    //the default behavior and then subverts the recursive call such that DefDlgProc calls 
+    //our dialog procedure to see what you want to do. In this pattern, our dialog callback
+    //can be written more like a standard windows proc, rather than a dialog proc. This then
+    //allows us to use all of the "message cracker" macros (like HANDLE_MSG) from windowsx.h for 
+    //a cleaner dialog proc. This pattern uses a set of macros from windowsx.h. 
+    //See https://devblogs.microsoft.com/oldnewthing/20031112-00/?p=41863 
+    //"A different type of dialog procedure" for a good overview of this pattern
     INT_PTR nRetVal = FALSE;
     CLogViewer* pThis = reinterpret_cast<CLogViewer*>(::GetWindowLongPtrW(hwnd, DWLP_USER));
     if (pThis) {
@@ -841,12 +930,19 @@ void CLogViewer::SetLineNumbers(HWND hwnd)
     ITextSelectionPtr spTextSelection;
     eval_error_hr(m_spTextDoc->GetSelection(&spTextSelection));
 
+    //The EM_SETPARAFORMAT message will only add line numbers to
+    //selected text. We want line #s for the entire contents of the
+    //RE control
+
+    //Get the current selection...
     long nStart = 0, nEnd = 0;
     eval_error_hr(spTextSelection->GetStart(&nStart));
     eval_error_hr(spTextSelection->GetEnd(&nEnd));
 
+    //..select entire RE box contexts...
     OnSetSel(hwnd);
 
+    //...format the entire/selected RE box context...
     PARAFORMAT2 pf = { 0 };
     pf.cbSize = sizeof(pf);
     pf.dwMask = PFM_NUMBERING | PFM_NUMBERINGSTYLE | PFM_NUMBERINGSTART;
@@ -858,6 +954,7 @@ void CLogViewer::SetLineNumbers(HWND hwnd)
 
     eval_error_nz(::SendMessageW(m_hEdit, EM_SETPARAFORMAT, 0, reinterpret_cast<LPARAM>(&pf)));
 
+    //...restore the original selection
     eval_error_hr(spTextSelection->SetStart(nStart));
     eval_error_hr(spTextSelection->SetEnd(nEnd));
 }
@@ -896,6 +993,8 @@ void CLogViewer::CreateDestroyStatusBar(HWND hwnd)
             m_hInst,
             nullptr));
 
+        //Create status bar parts of equal size, occupying entire width
+        //of the status bar
         int nWidth = r.right / STATUS_PARTS;
         int rightEdge = nWidth;
         
