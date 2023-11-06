@@ -11,8 +11,8 @@ template<class derived>
 class BaseWnd
 {
 public:
-	BaseWnd(bool bMainWnd = false) 
-		: m_bMainWnd(bMainWnd){};
+	BaseWnd(bool bQuitOnDestroy = false)
+		: m_bQuitOnDestory(bQuitOnDestroy) {};
 
 	//Method to call before starting windows msg pump.
 	//This method will create windows class and window 
@@ -146,7 +146,7 @@ protected:
 		m_hwndParent = nullptr;
 		m_hMenu = nullptr;
 
-		if (m_bMainWnd && m_bQuit) {
+		if (m_bQuitOnDestory) {
 			::PostQuitMessage(0);
 		}
 	}
@@ -238,14 +238,8 @@ protected:
 	HWND      m_hwndParent = nullptr;
 	HMENU	  m_hMenu = nullptr;
 
-	//These two control whether or not OnDestroy will 
+	//This controls whether or not OnDestroy will 
 	//call PostQuitMessage to end the message pump
-	//m_bMainWnd is meant to indicate whether or not
-	//the subclass is the main app window (should end the 
-	//message pump on destruction. 
-	//m_bQuit meant to use for temporary override of this
-	bool	  m_bQuit = true;
-	bool	  m_bMainWnd = false;
-
+	bool	m_bQuitOnDestory = false;
 };
 

@@ -31,8 +31,8 @@
 #include "CLogViewer.h"
 
 
-CLogViewer::CLogViewer(bool bMainWnd)
-	:   BaseWnd(bMainWnd){}
+CLogViewer::CLogViewer(bool bQuitOnDestroy)
+    : BaseWnd(bQuitOnDestroy) {}
 
 bool CLogViewer::InitInstance(HINSTANCE hInstance, std::wstring_view szFilePath)
 {

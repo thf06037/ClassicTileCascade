@@ -13,7 +13,7 @@
 class CLogViewer : public BaseWnd<CLogViewer>
 {
 public:
-	CLogViewer(bool bMainWnd = false);
+	CLogViewer(bool bQuitOnDestroy = false);
 
 	//Overload of this function to include the file path of the file
 	//being viewed in the viewer

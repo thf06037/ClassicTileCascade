@@ -56,14 +56,14 @@ bool ClassicTileWnd::BeforeWndCreate(bool bRanPrior)
     if (bRanPrior) {
         CloseTaskDlg();
         if (m_hWnd) {
-            m_bQuit = false;
+            m_bQuitOnDestory = false;
             try {
                 OnClose(m_hWnd);
             } catch (...) {
-                m_bQuit = true;
+                m_bQuitOnDestory = true;
                 throw;
             }
-            m_bQuit = true;
+            m_bQuitOnDestory = true;
 
             m_hMenu.reset();
             m_hPopupMenu = nullptr;
@@ -308,7 +308,7 @@ void ClassicTileWnd::OnDestroy(HWND hwnd)
         log_error("Unhandled exception");
     }
 
-    if (m_bQuit) {
+    if (m_bQuitOnDestory) {
         log_info("ClassicTileCascade ending.");
     }
 
