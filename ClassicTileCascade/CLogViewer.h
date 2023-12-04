@@ -25,6 +25,7 @@ public:
 	//in the rich edit control
 	bool SetFile(std::wstring_view szFilePath);
 	
+	virtual ~CLogViewer() = default;
 	CLogViewer(const CLogViewer&) = delete;
 	CLogViewer(CLogViewer&&) noexcept = delete;
 	CLogViewer& operator=(const CLogViewer&) = delete;

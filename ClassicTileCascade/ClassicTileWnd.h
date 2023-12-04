@@ -58,6 +58,7 @@ protected:
 	bool ProcessDlgMsg(LPMSG lpMsg) override;
 	LRESULT ClassWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 
+	virtual ~ClassicTileWnd() = default;
 	ClassicTileWnd(const ClassicTileWnd&) = delete;
 	ClassicTileWnd(ClassicTileWnd&&) = delete;
 	ClassicTileWnd& operator=(const ClassicTileWnd&) noexcept = delete;

@@ -91,6 +91,7 @@ public:
 		return m_hWnd;
 	}
 
+	virtual ~BaseWnd() = default;
 	BaseWnd(const BaseWnd&) = delete;
 	BaseWnd(BaseWnd&&) noexcept = delete;
 	BaseWnd& operator=(const BaseWnd&) = delete;
