@@ -14,49 +14,18 @@
 // Also will optionally remove the null terminator and anything after it upon destruction
 
 // Custom deleters
-struct HKEY_deleter {
-    void operator()(HKEY hKey)
+template<typename T, auto ( __stdcall* Fn)(T)>
+struct MM_Deleter {
+    void operator()(T handle)
     {
-        if (hKey) {
-            ::RegCloseKey(hKey); 
+        if (handle) {
+            (*Fn)(handle);
         }
     }
 
-    using pointer = HKEY;
+    using pointer = T;
 };
 
-struct HMENU_deleter {
-    void operator()(HMENU hMenu)
-    {
-        if (hMenu) {
-            ::DestroyMenu(hMenu);
-        }
-    }
-
-    using pointer = HMENU;
-};
-
-struct HWND_deleter {
-    void operator()(HWND hwnd)
-    {
-        if (hwnd) {
-            ::DestroyWindow(hwnd);
-        }
-    }
-
-    using pointer = HWND;
-};
-
-struct HICON_deleter {
-    void operator()(HICON hIcon)
-    {
-        if (hIcon) {
-            ::DestroyIcon(hIcon);
-        }
-    }
-
-    using pointer = HICON;
-};
 
 struct FILE_deleter {
     void operator()(FILE* pFile)
@@ -67,36 +36,15 @@ struct FILE_deleter {
     }
 };
 
-struct HANDLE_deleter {
-    void operator()(HANDLE h)
-    {
-        if (h) {
-            ::CloseHandle(h);
-        }
-    }
-
-    using pointer = HANDLE;
-};
-
-struct HMODULE_deleter {
-    void operator()(HMODULE hModule)
-    {
-        if (hModule) {
-            ::FreeLibrary(hModule);
-        }
-    }
-
-    using pointer = HMODULE;
-};
 
 // Type definitions of various smart pointers for use with Win32 object types
-using SPHKEY = std::unique_ptr<HKEY, HKEY_deleter>;
-using SPHMENU = std::unique_ptr<HMENU, HMENU_deleter>;
-using SPHWND = std::unique_ptr<HWND, HWND_deleter>;
-using SPHICON = std::unique_ptr<HICON, HICON_deleter>;
+using SPHKEY = std::unique_ptr<HKEY, MM_Deleter<HKEY, ::RegCloseKey>>;
+using SPHMENU = std::unique_ptr<HMENU, MM_Deleter<HMENU, ::DestroyMenu>>;
+using SPHWND = std::unique_ptr<HWND, MM_Deleter<HWND, ::DestroyWindow>>;
+using SPHICON = std::unique_ptr<HICON, MM_Deleter<HICON, ::DestroyIcon>>;
 using SPFILE = std::unique_ptr<FILE, FILE_deleter>;
-using SPHANDLE_EX = std::unique_ptr<HANDLE, HANDLE_deleter>;
-using SPHMODULE = std::unique_ptr<HMODULE, HMODULE_deleter>;
+using SPHANDLE_EX = std::unique_ptr<HANDLE, MM_Deleter<HANDLE, ::CloseHandle>>;
+using SPHMODULE = std::unique_ptr<HMODULE, MM_Deleter<HMODULE, ::FreeLibrary>>;
 
 // Utility class (CCoInitialize) for automatically calling CoInitialize and 
 // CoUnitialize at entry/exit of scope
